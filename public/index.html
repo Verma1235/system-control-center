@@ -1,0 +1,213 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Systems Control Panel</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" />
+    <style>
+        ::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: #020617;
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: #1e293b;
+            border-radius: 3px;
+        }
+
+        ::-webkit-scrollbar-thumb:hover {
+            background: #334155;
+        }
+
+        .fullscreen-active {
+            position: fixed !important;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            z-index: 9999 !important;
+            width: 100vw !important;
+            height: 100vh !important;
+            background: #000 !important;
+            border-radius: 0 !important;
+            max-height: none !important;
+        }
+    </style>
+</head>
+
+<body
+    class="bg-slate-950 text-slate-100 min-h-screen font-sans selection:bg-indigo-500 selection:text-white flex flex-col">
+
+    <!-- Auth Modal -->
+    <div id="authModal"
+        class="fixed inset-0 bg-slate-950/90 backdrop-blur-md flex items-center justify-center z-[100] p-4 hidden">
+        <div class="bg-slate-900 border border-slate-800 rounded-2xl max-w-md w-full p-6 shadow-2xl space-y-5">
+            <div class="text-center space-y-2">
+                <div
+                    class="h-12 w-12 rounded-xl bg-indigo-600/20 text-indigo-400 border border-indigo-500/30 flex items-center justify-center mx-auto text-xl shadow-lg">
+                    <i class="fa-solid fa-lock"></i>
+                </div>
+                <h2 class="text-lg font-bold text-white tracking-tight">Admin Authorization Required</h2>
+            </div>
+            <form id="authForm" class="space-y-4">
+                <div>
+                    <input type="text" id="adminUsernameInput" placeholder="Username" required
+                        class="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-2 text-sm text-white focus:outline-none focus:border-indigo-500 transition mb-3" />
+                    <input type="password" id="adminPasswordInput" placeholder="Password" required
+                        class="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-2 text-sm text-white focus:outline-none focus:border-indigo-500 transition" />
+                    <p id="authError" class="text-xs text-rose-400 mt-1.5 hidden font-medium"></p>
+                </div>
+                <button type="submit"
+                    class="w-full py-2.5 bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold rounded-xl transition shadow-lg">
+                    Unlock Terminal
+                </button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Custom Confirm Modal -->
+    <div id="confirmModal"
+        class="fixed inset-0 bg-slate-950/90 backdrop-blur-sm flex items-center justify-center z-[200] hidden p-4 transition-opacity">
+        <div class="bg-slate-900 border border-slate-800 rounded-2xl w-full max-w-sm p-6 shadow-2xl flex flex-col">
+            <div class="flex items-center gap-3 mb-4 text-rose-500">
+                <div
+                    class="h-10 w-10 rounded-full bg-rose-500/10 flex items-center justify-center border border-rose-500/20">
+                    <i class="fa-solid fa-triangle-exclamation text-lg"></i>
+                </div>
+                <h3 id="confirmTitle" class="text-sm font-bold text-white uppercase tracking-wider">Confirm Action</h3>
+            </div>
+            <p id="confirmMessage" class="text-xs text-slate-300 mb-6 leading-relaxed whitespace-pre-wrap">Are you sure
+                you want to proceed?</p>
+            <div class="flex justify-end gap-3 mt-auto">
+                <button id="btnConfirmCancel"
+                    class="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-bold rounded-lg transition">Cancel</button>
+                <button id="btnConfirmYes"
+                    class="px-4 py-2 bg-rose-600 hover:bg-rose-500 text-white text-xs font-bold rounded-lg transition shadow-lg shadow-rose-900/20">Yes,
+                    Proceed</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Custom Alert Modal -->
+    <div id="alertModal"
+        class="fixed inset-0 bg-slate-950/90 backdrop-blur-sm flex items-center justify-center z-[210] hidden p-4 transition-opacity">
+        <div class="bg-slate-900 border border-slate-800 rounded-2xl w-full max-w-sm p-6 shadow-2xl flex flex-col">
+            <div class="flex items-center gap-3 mb-4 text-sky-500">
+                <div
+                    class="h-10 w-10 rounded-full bg-sky-500/10 flex items-center justify-center border border-sky-500/20">
+                    <i class="fa-solid fa-circle-info text-lg"></i>
+                </div>
+                <h3 id="alertTitle" class="text-sm font-bold text-white uppercase tracking-wider">Information</h3>
+            </div>
+            <p id="alertMessage" class="text-xs text-slate-300 mb-6 leading-relaxed whitespace-pre-wrap"></p>
+            <div class="flex justify-end mt-auto">
+                <button id="btnAlertOk"
+                    class="px-4 py-2 bg-sky-600 hover:bg-sky-500 text-white text-xs font-bold rounded-lg transition shadow-lg shadow-sky-900/20">OK</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Custom Prompt Modal -->
+    <div id="promptModal"
+        class="fixed inset-0 bg-slate-950/90 backdrop-blur-sm flex items-center justify-center z-[210] hidden p-4 transition-opacity">
+        <div class="bg-slate-900 border border-slate-800 rounded-2xl w-full max-w-sm p-6 shadow-2xl flex flex-col">
+            <div class="flex items-center gap-3 mb-4 text-emerald-500">
+                <div
+                    class="h-10 w-10 rounded-full bg-emerald-500/10 flex items-center justify-center border border-emerald-500/20">
+                    <i class="fa-solid fa-keyboard text-lg"></i>
+                </div>
+                <h3 id="promptTitle" class="text-sm font-bold text-white uppercase tracking-wider">Input Required</h3>
+            </div>
+            <p id="promptMessage" class="text-xs text-slate-300 mb-3"></p>
+            <input type="text" id="promptInput"
+                class="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-xs text-white focus:outline-none focus:border-emerald-500 mb-6"
+                autocomplete="off" />
+            <div class="flex justify-end gap-3 mt-auto">
+                <button id="btnPromptCancel"
+                    class="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-bold rounded-lg transition">Cancel</button>
+                <button id="btnPromptSubmit"
+                    class="px-4 py-2 bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold rounded-lg transition shadow-lg shadow-emerald-900/20">Submit</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Top Navigation -->
+    <header class="border-b border-slate-800/80 bg-slate-900/60 backdrop-blur-md sticky top-0 z-40 shrink-0">
+        <div class="max-w-7xl mx-auto px-4 py-3 flex items-center justify-between">
+            <div class="flex items-center space-x-3">
+                <div
+                    class="h-9 w-9 rounded-xl bg-gradient-to-tr from-indigo-900 to-indigo-600 flex items-center justify-center text-white shadow-lg">
+                    <i class="fa-solid fa-network-wired"></i>
+                </div>
+                <div>
+                    <h1 class="text-sm font-bold tracking-tight text-white flex items-center gap-2">Systems Control</h1>
+                    <p class="text-[10px] text-slate-400 font-medium">Secured Remote Administration</p>
+                </div>
+            </div>
+            <div class="flex items-center space-x-3">
+                <button id="lockSessionBtn"
+                    class="text-xs font-semibold px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 transition flex items-center gap-1.5">
+                    <i class="fa-solid fa-lock"></i> <span>Lock</span>
+                </button>
+                <span id="socketStatusBadge"
+                    class="inline-flex items-center gap-1.5 py-1 px-2.5 rounded-full text-[9px] font-bold uppercase tracking-wider bg-rose-500/10 text-rose-400 border border-rose-500/20">
+                    <span class="h-2 w-2 rounded-full bg-rose-400"></span> <span>Disconnected</span>
+                </span>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Dashboard -->
+    <main class="flex-1 overflow-y-auto">
+        <div class="max-w-7xl mx-auto px-4 py-6 grid grid-cols-1 lg:grid-cols-12 gap-6 h-full">
+
+            <!-- Nodes List -->
+            <section class="lg:col-span-7 space-y-4">
+                <div
+                    class="overflow-hidden rounded-2xl border border-slate-800/80 bg-slate-950/60 shadow-xl backdrop-blur-xl flex flex-col max-h-[800px]">
+                    <div
+                        class="border-b border-slate-800/80 bg-slate-900/50 px-5 py-4 flex justify-between items-center">
+                        <h2 class="text-sm font-bold tracking-wide text-slate-100 flex items-center gap-2"><i
+                                class="fa-solid fa-desktop text-indigo-400"></i> Active Nodes</h2>
+                        <button id="refreshNodesBtn"
+                            class="text-xs bg-slate-800 hover:bg-slate-700 px-3 py-1.5 rounded text-slate-300"><i
+                                class="fa-solid fa-sync"></i></button>
+                    </div>
+                    <div id="clientsContainer" class="p-5 space-y-3 overflow-y-auto flex-1">
+                        <!-- Populated by JS -->
+                    </div>
+                </div>
+            </section>
+
+            <!-- Logs Feed -->
+            <section class="lg:col-span-5 h-[400px] lg:h-auto">
+                <div
+                    class="h-full overflow-hidden rounded-2xl border border-slate-800/80 bg-slate-950/70 shadow-xl backdrop-blur-xl flex flex-col">
+                    <div
+                        class="border-b border-slate-800/80 bg-slate-900/50 px-5 py-4 flex items-center justify-between">
+                        <h2 class="text-sm font-bold tracking-wide text-slate-100 flex items-center gap-2"><i
+                                class="fa-solid fa-terminal text-indigo-400"></i> Event Feed</h2>
+                        <button id="clearLogsBtn"
+                            class="px-3 py-1.5 rounded-lg border border-slate-800 bg-slate-900/80 text-[10px] font-bold text-slate-400 hover:text-rose-400 transition">Clear</button>
+                    </div>
+                    <div id="logsContainer" class="min-h-0 flex-1 overflow-y-auto p-4 font-mono text-[11px] space-y-2">
+                        <!-- Logs Populated by JS -->
+                    </div>
+                </div>
+            </section>
+        </div>
+    </main>
+
+    <!-- Socket.IO is served by the backend automatically -->
+    <script src="/socket.io/socket.io.js"></script>
+    <script type="module" src="./js/app.js"></script>
+</body>
+
+</html>
