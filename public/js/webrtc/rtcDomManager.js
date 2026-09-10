@@ -80,11 +80,35 @@ export const runWebRtcConnection = (showToast) => {
         if (showToast) showToast("Connection & Hardware disconnected.", "info");
     });
 
-    ui.startScreen?.addEventListener('click', () => dispatchE2E('start_screen'));
-    ui.stopScreen?.addEventListener('click', () => dispatchE2E('stop_screen'));
-    ui.startCamera?.addEventListener('click', () => dispatchE2E('start_camera'));
-    ui.stopCamera?.addEventListener('click', () => dispatchE2E('stop_camera'));
-    ui.startAudio?.addEventListener('click', () => dispatchE2E('start_audio'));
+    // --- SCREEN CONTROLS ---
+    ui.startScreen?.addEventListener('click', () => {
+        dispatchE2E('start_screen');
+        if (ui.startScreen) ui.startScreen.disabled = true;
+        if (ui.stopScreen) ui.stopScreen.disabled = false;
+    });
+    ui.stopScreen?.addEventListener('click', () => {
+        dispatchE2E('stop_screen');
+        if (ui.startScreen) ui.startScreen.disabled = false;
+        if (ui.stopScreen) ui.stopScreen.disabled = true;
+    });
+
+    // --- CAMERA CONTROLS ---
+    ui.startCamera?.addEventListener('click', () => {
+        dispatchE2E('start_camera');
+        if (ui.startCamera) ui.startCamera.disabled = true;
+        if (ui.stopCamera) ui.stopCamera.disabled = false;
+    });
+    ui.stopCamera?.addEventListener('click', () => {
+        dispatchE2E('stop_camera');
+        if (ui.startCamera) ui.startCamera.disabled = false;
+        if (ui.stopCamera) ui.stopCamera.disabled = true;
+    });
+
+    // --- AUDIO CONTROLS ---
+    ui.startAudio?.addEventListener('click', () => {
+        dispatchE2E('start_audio');
+        if (ui.startAudio) ui.startAudio.disabled = true;
+    });
 
     // 🔥 2-WAY AUDIO LOGIC (Admin Mic)
     ui.startMyMic?.addEventListener('click', () => {
