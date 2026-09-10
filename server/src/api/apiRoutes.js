@@ -3,7 +3,8 @@ import { authController } from './authController.js';
 import { nodeController } from './nodeController.js';
 import { requireAuth } from '../middleware/authMiddleware.js';
 import { streamController } from './streamController.js'; // ✨ ADDED
-
+import dotenv from "dotenv";
+dotenv.config();
 const router = express.Router();
 
 // Public Authentication Routes
