@@ -166,8 +166,22 @@
     </div>
 
     <!-- Toast Notification Container -->
-    <div id="toastContainer" class="fixed bottom-4 right-4 z-[300] flex flex-col gap-2 pointer-events-none"></div>
-
+    <div id="toastContainer" class="fixed bottom-4 right-2 z-[300] flex flex-col gap-2 pointer-events-none"></div>
+    <!-- Global Action Progress Overlay (Blurred Screen) -->
+    <div id="globalProgressBar"
+        class="hidden fixed inset-0 bg-slate-950/70 backdrop-blur-md z-[300] flex flex-col items-center justify-center transition-opacity">
+        <div class="relative flex items-center justify-center mb-6">
+            <div class="h-16 w-16 rounded-full border-4 border-slate-800 border-t-indigo-500 animate-spin"></div>
+            <i class="fa-solid fa-microchip absolute text-indigo-400 text-xl animate-pulse"></i>
+        </div>
+        <p class="text-xs font-mono text-indigo-300 font-bold mb-8 animate-pulse tracking-widest uppercase">
+            Executing Command...
+        </p>
+        <button id="btnCancelCommand"
+            class="px-6 py-2.5 bg-rose-600/90 hover:bg-rose-500 text-white text-xs font-bold rounded-xl transition-all shadow-lg shadow-rose-900/40 flex items-center gap-2 border border-rose-500/50">
+            <i class="fa-solid fa-ban text-sm"></i> Cancel Action
+        </button>
+    </div>
     <!-- Top Navigation -->
     <header
         class="border-b border-slate-800/80 bg-slate-900/60 backdrop-blur-md sticky top-0 z-40 shadow-lg shadow-black/20">
@@ -288,28 +302,37 @@
                             class="text-[9px] font-bold uppercase text-slate-300">Disconnect</span>
                     </button>
                 </div>
-                <!-- Live Audio Feed Player -->
-                <div
-                    class="overflow-hidden rounded-2xl border border-slate-800/80 bg-slate-900/40 shadow-xl backdrop-blur-xl mt-6">
+
+            </div>
+            <!-- Live Audio Feed (2-Way) -->
+            <div
+                class="overflow-hidden rounded-2xl border border-slate-800/80 bg-slate-900/40 shadow-xl backdrop-blur-xl mt-6">
+                <div class="border-b border-slate-800/80 bg-slate-950/70 px-4 py-3 flex justify-between items-center">
+                    <h2 class="text-xs font-bold text-slate-200 flex items-center gap-3">
+                        <i class="fa-solid fa-headphones text-rose-400"></i> Audio Engine (2-Way)
+                    </h2>
+                </div>
+
+                <div class="p-4 bg-slate-950/50 flex flex-col items-center justify-center border-t border-white/5">
+                    <!-- Node ki Aawaz Sunne ke liye -->
                     <div
-                        class="border-b border-slate-800/80 bg-slate-950/70 px-4 py-3 flex justify-between items-center">
-                        <h2 class="text-xs font-bold text-slate-200 flex items-center gap-3">
-                            <i class="fa-solid fa-headphones text-rose-400"></i> Live Audio Feed
-                        </h2>
+                        class="w-full rounded-xl bg-slate-900 shadow-inner border border-slate-700/50 p-1 ring-1 ring-black">
+                        <audio id="remoteAudio" controls autoplay
+                            class="w-full h-9 outline-none opacity-90 hover:opacity-100 transition-opacity"
+                            style="color-scheme: dark;">
+                        </audio>
                     </div>
 
-                    <div class="p-4 bg-slate-950/50 flex flex-col items-center justify-center border-t border-white/5">
-                        <!-- Dark themed audio wrapper -->
-                        <div
-                            class="w-full rounded-xl bg-slate-900 shadow-inner border border-slate-700/50 p-1 ring-1 ring-black">
-                            <audio id="remoteAudio" controls autoplay
-                                class="w-full h-9 outline-none opacity-90 hover:opacity-100 transition-opacity"
-                                style="color-scheme: dark;"></audio>
-                        </div>
-                        <span class="text-[9px] font-mono text-slate-500 mt-3 text-center flex items-center gap-1.5">
-                            <i class="fa-solid fa-circle-info text-sky-500/50"></i> Click <strong
-                                class="text-slate-400 px-1">'Enable Audio'</strong> above to start receiving mic feed.
-                        </span>
+                    <!-- Admin Ka Mic (Talk to Node) -->
+                    <div class="mt-4 flex gap-2 w-full justify-center border-t border-slate-800 pt-3">
+                        <button id="btnStartMyMic" disabled
+                            class="px-3 py-1.5 bg-emerald-600/20 text-emerald-400 border border-emerald-500/30 hover:bg-emerald-600/40 rounded-lg text-[10px] font-bold transition flex items-center gap-1.5 shadow-inner disabled:opacity-30 disabled:cursor-not-allowed">
+                            <i class="fa-solid fa-microphone"></i> Talk to Node
+                        </button>
+                        <button id="btnStopMyMic" disabled
+                            class="px-3 py-1.5 bg-slate-800 text-slate-400 hover:bg-slate-700 rounded-lg text-[10px] font-bold transition flex items-center gap-1.5 disabled:opacity-30 disabled:cursor-not-allowed">
+                            <i class="fa-solid fa-microphone-slash"></i> Mute My Mic
+                        </button>
                     </div>
                 </div>
             </div>
@@ -359,6 +382,17 @@
                         <input type="range" id="brightnessSlider" min="0" max="100" step="1" value="50"
                             class="flex-1 accent-indigo-500">
                         <button id="btnSetBrightness"
+                            class="px-3 py-1 bg-slate-800 hover:bg-slate-700 rounded text-slate-300 text-[10px] font-bold">Apply</button>
+                    </div>
+                </div>
+                <div data-capability="brightness" class="p-4 border-b border-slate-800/50">
+                    <label class="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-2 block">System
+                        Volume</label>
+                    <div class="flex items-center gap-3">
+                        <i class="fa-solid fa-sun text-slate-500 text-xs"></i>
+                        <input type="range" id="volumeSlider" min="0" max="100" step="1" value="50"
+                            class="flex-1 accent-indigo-500">
+                        <button id="btnSetVolume"
                             class="px-3 py-1 bg-slate-800 hover:bg-slate-700 rounded text-slate-300 text-[10px] font-bold">Apply</button>
                     </div>
                 </div>

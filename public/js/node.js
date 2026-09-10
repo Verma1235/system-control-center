@@ -209,10 +209,24 @@ document.addEventListener("DOMContentLoaded", async () => {
         }
     });
 
+
+    bindClick('btnSetVolume', async () => {
+        if (await customConfirm("Change Brightness?")) {
+            let val = document.querySelector('#volumeSlider').value;
+            let range = (val >= 0 && val <= 100) ? val : 50;
+            window.dispatchE2ECommand('control_volume', { range });
+        }
+    });
+
     bindClick('btnSpeak', async () => {
+        let target = document.getElementById('ttsInput');
+
         let textToSpeak = document.getElementById('ttsInput')?.value;
-        if (await window.isEmpty(textToSpeak)) return customAlert(`Enter text to speak at node.`);
+        if (await window.isEmpty(textToSpeak)) {
+            return customAlert(`Enter text to speak at node.`);
+        }
         window.dispatchE2ECommand('text-to-speak', { textToSpeak });
+        target.value = '';
     });
 
     // ==========================================
@@ -421,6 +435,7 @@ document.addEventListener("DOMContentLoaded", async () => {
     // ==========================================
     // SOCKET LISTENERS FOR DASHBOARD
     // ==========================================
+    // Unified Response Handler
     socket.on('command-response-relay', async (data) => {
         if (data.nodeId !== targetNodeId) return;
         hideProgress();
@@ -430,22 +445,28 @@ document.addEventListener("DOMContentLoaded", async () => {
             const response = JSON.parse(decryptedString);
 
             if (response.success) {
-                if (!['start_screen', 'stop_screen', 'start_camera', 'stop_camera', 'start_audio'].includes(response.type)) {
-                    window.showToast(`Success: ${response.status}`, "success");
-                    LogsUI.add({ message: `Success: ${response.status}`, type: "success", source: "NODE" });
+                // 🔥 YAHAN BADALNA HAI: status ki jagah message display karein
+                const displayMsg = response.message || response.status;
+
+                if (!['start_screen', 'stop_screen', 'start_camera', 'stop_camera', 'start_audio', 'stop_audio'].includes(response.type)) {
+                    window.showToast(displayMsg, "success");
+                    LogsUI.add({ message: displayMsg, type: "success", source: "NODE" });
                 }
 
                 if (response.data && typeof response.data.items !== 'undefined') renderFileTree(response.data);
                 else if (response.data && response.data.data && response.data.mimeType) renderMediaPreview(window.activeEditingPath, response.data, false);
                 else if (response.data && typeof response.data.content !== 'undefined') openFileEditor(window.activeEditingPath, response.data.content);
             } else {
+                // Failed ke case me bhi response.message prefer karein
+                const errorMsg = response.message || response.error || "Operation failed";
+
                 if (response.error && (response.error.includes("30MB") || response.error.includes("too large"))) {
                     window.showToast("File is very large, switching to native stream...", "info");
                     renderMediaPreview(window.activeEditingPath, null, true);
                 } else {
-                    window.showToast(`Failed: ${response.error}`, "error");
-                    LogsUI.add({ message: `Failed: ${response.error}`, type: "error", source: "NODE" });
-                    await customAlert(`Operation Failed: ${response.error}`);
+                    window.showToast(errorMsg, "error");
+                    LogsUI.add({ message: errorMsg, type: "error", source: "NODE" });
+                    await customAlert(`Operation Failed: ${errorMsg}`);
                 }
             }
         } catch (err) {
@@ -453,7 +474,6 @@ document.addEventListener("DOMContentLoaded", async () => {
             LogsUI.add({ message: `Decryption failed: ${err.message}`, type: "error", source: "SECURITY" });
         }
     });
-
     socket.on('node-status-changed', (data) => {
         if (data.nodeId === targetNodeId) {
             const badge = document.getElementById('nodeStatusBadge');

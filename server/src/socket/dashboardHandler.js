@@ -35,7 +35,7 @@ export function handleDashboardConnection(io, socket, activeNodesMap) {
                 }
             }
 
-            console.log("Auth passed or not required. Proceeding...");
+            // console.log("Auth passed or not required. Proceeding...");
 
             // Verify the node is approved before allowing command dispatch
             const [rows] = await db.execute('SELECT is_approved FROM nodes WHERE id = ?', [targetNodeId]);
