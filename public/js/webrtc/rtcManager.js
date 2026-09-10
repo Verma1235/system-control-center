@@ -43,6 +43,7 @@ export class WebRTCManager {
 
     async getIceServers() {
         try {
+            // 🔥 Relative path use karein taaki ye hamesha sahi domain hit kare
             const res = await fetch('/api/webrtc/ice-servers');
             const data = await res.json();
             return data.iceServers || [{ urls: "stun:stun.l.google.com:19302" }];
@@ -50,7 +51,6 @@ export class WebRTCManager {
             return [{ urls: "stun:stun.l.google.com:19302" }];
         }
     }
-
     async connect() {
         this.close();
 
