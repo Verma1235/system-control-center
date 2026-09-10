@@ -4,7 +4,7 @@ import { SocketManager } from './socket/socketClient.js';
 import { encryptPayload, decryptPayload } from './core/crypto.js';
 import { LogsUI } from './ui/logs.js';
 import { runWebRtcConnection } from "./webrtc/rtcDomManager.js";
-const PROVISIONING_SECRET = 'setup_secret_key_123';
+const PROVISIONING_KEY = '3JyX_DVhwCTQXPas2rReblx2oOzxSFRQwSBxdvqOIjY';
 
 // ==========================================
 // PROGRESS BAR HELPERS
@@ -51,7 +51,7 @@ document.addEventListener("DOMContentLoaded", async () => {
         return new Promise((resolve) => {
             const modal = document.getElementById('promptModal');
             const inputEl = document.getElementById('promptInput');
-            
+
             document.getElementById('promptTitle').textContent = title;
             document.getElementById('promptMessage').textContent = message;
             inputEl.value = defaultValue;
@@ -148,7 +148,7 @@ document.addEventListener("DOMContentLoaded", async () => {
     const socket = SocketManager.get();
 
     const encoder = new TextEncoder();
-    const keyData = encoder.encode(PROVISIONING_SECRET);
+    const keyData = encoder.encode(PROVISIONING_KEY);
     const sessionKeyBuffer = await window.crypto.subtle.digest('SHA-256', keyData);
 
     // ==========================================
@@ -200,7 +200,7 @@ document.addEventListener("DOMContentLoaded", async () => {
     bindClick('btnLock', async () => { if (await customConfirm("Lock remote OS?")) window.dispatchE2ECommand('lock_screen'); });
     bindClick('btnRestart', async () => { if (await customConfirm("Restart remote OS?")) window.dispatchE2ECommand('restart'); });
     bindClick('btnShutdown', async () => { if (await customConfirm("Shutdown remote OS?")) window.dispatchE2ECommand('shutdown'); });
-    
+
     bindClick('btnSetBrightness', async () => {
         if (await customConfirm("Change Brightness?")) {
             let val = document.querySelector('#brightnessSlider').value;
@@ -227,7 +227,7 @@ document.addEventListener("DOMContentLoaded", async () => {
         if (event) { event.preventDefault(); event.stopPropagation(); }
         let authPass = await window.customPrompt("Enter File security key", "Authentication Needed !!");
         if ((await window.isEmpty(authPass))) return await customAlert("Authorization required to delete files/folders");
-        
+
         if (await customConfirm(`Delete ${path}?`)) {
             window.dispatchE2ECommand('delete_item', { path }, { isAuthRequired: true, authPass });
             setTimeout(() => window.navigateToDir(currentRemotePath), 800);
@@ -345,7 +345,7 @@ document.addEventListener("DOMContentLoaded", async () => {
             if (!token) return window.showToast("Auth token missing for streaming!", "error");
             const streamUrl = `/api/nodes/${targetNodeId}/stream?token=${encodeURIComponent(token)}&path=${encodeURIComponent(filePath)}&action=stream`;
             const ext = filePath.split('.').pop().toLowerCase();
-            
+
             if (['mp3', 'wav', 'ogg'].includes(ext)) mediaContainer.innerHTML = `<audio src="${streamUrl}" controls autoplay class="w-full"></audio>`;
             else mediaContainer.innerHTML = `<video src="${streamUrl}" controls autoplay class="max-h-[70vh] max-w-full rounded"></video>`;
         } else if (mediaObj) {
@@ -431,8 +431,8 @@ document.addEventListener("DOMContentLoaded", async () => {
 
             if (response.success) {
                 if (!['start_screen', 'stop_screen', 'start_camera', 'stop_camera', 'start_audio'].includes(response.type)) {
-                     window.showToast(`Success: ${response.status}`, "success");
-                     LogsUI.add({ message: `Success: ${response.status}`, type: "success", source: "NODE" });
+                    window.showToast(`Success: ${response.status}`, "success");
+                    LogsUI.add({ message: `Success: ${response.status}`, type: "success", source: "NODE" });
                 }
 
                 if (response.data && typeof response.data.items !== 'undefined') renderFileTree(response.data);
