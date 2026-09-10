@@ -1,81 +1,105 @@
 export class WebRTCManager {
-    constructor(socketManager, targetNodeId) {
-        this.socketManager = socketManager;
+    constructor(socketManager, targetNodeId, showToast, onStateChange) {
+        this.socket = socketManager.get();
         this.targetNodeId = targetNodeId;
+        this.showToast = showToast || console.log;
+        this.onStateChange = onStateChange;
+
         this.pc = null;
+        this.screenVideo = document.getElementById("screenVideo");
+        this.cameraVideo = document.getElementById("cameraVideo");
+        // 🔥 NAYA: Aapka UI wala Audio Player
+        this.remoteAudio = document.getElementById("remoteAudio");
 
-        // DOM Elements
-        this.screenVideo = document.getElementById('screenVideo');
-        this.cameraVideo = document.getElementById('cameraVideo');
-
-        this.setupSignalingListener();
+        this.setupSignaling();
     }
 
-    setupSignalingListener() {
-        const socket = this.socketManager.get();
+    setupSignaling() {
+        this.socket.off("webrtc:signal");
 
-        socket.on('webrtc-signal', async (payload) => {
-            const { signalData } = payload;
+        this.socket.on("webrtc:signal", async ({ signalData }) => {
             if (!this.pc) return;
 
             try {
-                if (signalData.type === 'answer') {
-                    await this.pc.setRemoteDescription(new RTCSessionDescription(signalData.answer));
-                } else if (signalData.type === 'ice-candidate') {
+                if (signalData.type === "answer") {
+                    await this.pc.setRemoteDescription(new RTCSessionDescription(signalData.sdp));
+                    this.showToast("P2P Handshake established!", "success");
+                    if (this.onStateChange) this.onStateChange(true);
+                }
+                else if (signalData.type === "ice-candidate" && signalData.candidate) {
                     await this.pc.addIceCandidate(new RTCIceCandidate(signalData.candidate));
                 }
             } catch (error) {
-                console.error("Error processing incoming WebRTC signal:", error);
+                console.error("WebRTC signaling error:", error);
             }
         });
     }
 
-    async createPeerConnection() {
-        if (this.pc) {
-            this.pc.close();
-        }
+    async connect() {
+        this.close(); // Pura clean karo pehle
 
         this.pc = new RTCPeerConnection({
-            iceServers: [{ urls: "stun:stun.l.google.com:19302" }]
+            iceServers: [
+                { urls: "stun:stun.l.google.com:19302" },
+                { urls: "stun:stun1.l.google.com:19302" }
+            ]
         });
 
-        // Prepare to receive video tracks
-        this.pc.addTransceiver('video', { direction: 'recvonly' }); // Transceiver 0 (Screen)
-        this.pc.addTransceiver('video', { direction: 'recvonly' }); // Transceiver 1 (Camera)
+        // LOCKING SLOTS:
+        this.pc.addTransceiver("video", { direction: "recvonly" }); // Index 0: SCREEN
+        this.pc.addTransceiver("video", { direction: "recvonly" }); // Index 1: CAMERA
+        this.pc.addTransceiver("audio", { direction: "recvonly" }); // Index 2: AUDIO
 
-        // Handle incoming tracks
         this.pc.ontrack = (event) => {
-            const stream = event.streams[0];
+            const stream = event.streams[0] || new MediaStream([event.track]);
+            const transceivers = this.pc.getTransceivers();
 
-            // Heuristic: Route stream based on which button was clicked recently or track order.
-            // For robustness, WebRTC often fires ontrack for each transceiver.
-            // We will assign it to the first available non-playing video element.
-            if (!this.screenVideo.srcObject) {
+            if (event.transceiver === transceivers[0]) {
                 this.screenVideo.srcObject = stream;
-            } else if (!this.cameraVideo.srcObject && stream.id !== this.screenVideo.srcObject.id) {
+            }
+            else if (event.transceiver === transceivers[1]) {
                 this.cameraVideo.srcObject = stream;
             }
-        };
-
-        // Send local ICE candidates to the Electron Node
-        this.pc.onicecandidate = (event) => {
-            if (event.candidate) {
-                this.socketManager.get().emit('webrtc-signal', {
-                    targetSocketId: this.targetNodeId, // In our architecture, Dashboard sends to Node ID via server routing
-                    signalData: { type: 'ice-candidate', candidate: event.candidate }
-                });
+            // 🔥 NAYA: Multiple audio hatakar sirf single UI player pe set kiya
+            else if (event.transceiver === transceivers[2] || event.track.kind === "audio") {
+                if (this.remoteAudio) {
+                    this.remoteAudio.srcObject = stream;
+                    this.remoteAudio.play().catch(e => {
+                        console.warn("Autoplay blocked by browser for audio. User must click play.", e);
+                        this.showToast("Click PLAY on the audio player to hear sound", "info");
+                    });
+                }
             }
         };
 
-        // Create the Offer
-        const offer = await this.pc.createOffer();
-        await this.pc.setLocalDescription(offer);
+        this.pc.onicecandidate = (event) => {
+            if (!event.candidate) return;
+            this.socket.emit("webrtc:signal", {
+                targetNodeId: this.targetNodeId,
+                signalData: { type: "ice-candidate", candidate: event.candidate }
+            });
+        };
 
-        // Send Offer to the Electron Node
-        this.socketManager.get().emit('webrtc-signal', {
-            targetSocketId: this.targetNodeId,
-            signalData: { type: 'offer', offer: offer }
-        });
+        this.pc.onconnectionstatechange = () => {
+            if (["disconnected", "failed", "closed"].includes(this.pc?.connectionState)) {
+                this.close();
+            }
+        };
+
+        try {
+            const offer = await this.pc.createOffer();
+            await this.pc.setLocalDescription(offer);
+
+            this.socket.emit("webrtc:signal", {
+                targetNodeId: this.targetNodeId,
+                signalData: { type: "offer", sdp: offer }
+            }, (res) => {
+                if (res && !res.success) this.showToast(res.message, "error");
+            });
+        } catch (error) {
+            this.showToast("Failed to initialize WebRTC", "error");
+            if (this.onStateChange) this.onStateChange(false);
+        }
     }
 
     close() {
@@ -83,7 +107,21 @@ export class WebRTCManager {
             this.pc.close();
             this.pc = null;
         }
-        if (this.screenVideo) this.screenVideo.srcObject = null;
-        if (this.cameraVideo) this.cameraVideo.srcObject = null;
+
+        // Clean UI Video
+        [this.screenVideo, this.cameraVideo].forEach(video => {
+            if (video && video.srcObject) {
+                video.srcObject.getTracks().forEach(track => track.stop());
+                video.srcObject = null;
+            }
+        });
+
+        // Clean UI Audio (Single Player)
+        if (this.remoteAudio && this.remoteAudio.srcObject) {
+            this.remoteAudio.srcObject.getTracks().forEach(track => track.stop());
+            this.remoteAudio.srcObject = null;
+        }
+
+        if (this.onStateChange) this.onStateChange(false);
     }
 }

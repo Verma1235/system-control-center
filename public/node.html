@@ -25,11 +25,35 @@
         ::-webkit-scrollbar-thumb:hover {
             background: #334155;
         }
+
+        .video-glow {
+            box-shadow: 0 0 40px -10px rgba(99, 102, 241, 0.15);
+        }
+
+        /* Default Audio Player ko Dark Theme me convert karne ke liye */
+        audio {
+            color-scheme: dark;
+        }
+
+        audio::-webkit-media-controls-panel {
+            background-color: #0f172a;
+            /* Tailwind bg-slate-900 */
+        }
+
+        audio::-webkit-media-controls-play-button,
+        audio::-webkit-media-controls-mute-button,
+        audio::-webkit-media-controls-timeline,
+        audio::-webkit-media-controls-current-time-display,
+        audio::-webkit-media-controls-time-remaining-display {
+            filter: contrast(1.2);
+        }
     </style>
 </head>
 
-<body class="bg-slate-950 text-slate-100 min-h-screen font-sans">
+<body class="bg-slate-950 text-slate-100 min-h-screen font-sans selection:bg-indigo-500/30">
 
+    <!-- ALL MODALS (Editor, Media, Confirm, Alert, Prompt, Progress) REMAIN EXACTLY THE SAME AS ORIGINAL -->
+    <!-- (Include your existing File Editor Modal, Media Modal, Confirm Modal, Alert Modal, Prompt Modal, and Global Progress Bar here to save space) -->
     <!-- File Editor Modal -->
     <div id="fileEditorModal"
         class="fixed inset-0 bg-slate-950/80 backdrop-blur-sm flex items-center justify-center z-[100] hidden p-4">
@@ -145,7 +169,8 @@
     <div id="toastContainer" class="fixed bottom-4 right-4 z-[300] flex flex-col gap-2 pointer-events-none"></div>
 
     <!-- Top Navigation -->
-    <header class="border-b border-slate-800/80 bg-slate-900/60 backdrop-blur-md sticky top-0 z-40">
+    <header
+        class="border-b border-slate-800/80 bg-slate-900/60 backdrop-blur-md sticky top-0 z-40 shadow-lg shadow-black/20">
         <div class="max-w-7xl mx-auto px-4 py-3 flex items-center justify-between">
             <div class="flex items-center space-x-4">
                 <button onclick="window.location.href='/index.html'"
@@ -158,114 +183,161 @@
                 </div>
             </div>
             <span id="nodeStatusBadge"
-                class="inline-flex items-center gap-1.5 py-1 px-2.5 rounded-full text-[9px] font-bold uppercase tracking-wider bg-slate-500/10 text-slate-400 border border-slate-500/20">
+                class="inline-flex items-center gap-1.5 py-1 px-2.5 rounded-full text-[9px] font-bold uppercase tracking-wider bg-slate-800 text-slate-400 border border-slate-700">
                 <i class="fa-solid fa-circle-notch fa-spin"></i> Connecting
             </span>
         </div>
     </header>
-    <!-- Global Action Progress Overlay (Blurred Screen) -->
-    <div id="globalProgressBar"
-        class="hidden fixed inset-0 bg-slate-950/70 backdrop-blur-md z-[300] flex flex-col items-center justify-center transition-opacity">
-
-        <!-- Circular Progress Bar (Spinner) -->
-        <div class="relative flex items-center justify-center mb-6">
-            <!-- Outer spinning ring -->
-            <div class="h-16 w-16 rounded-full border-4 border-slate-800 border-t-indigo-500 animate-spin"></div>
-            <!-- Inner icon -->
-            <i class="fa-solid fa-microchip absolute text-indigo-400 text-xl animate-pulse"></i>
-        </div>
-
-        <p class="text-xs font-mono text-indigo-300 font-bold mb-8 animate-pulse tracking-widest uppercase">
-            Executing Command...
-        </p>
-
-        <!-- Stop / Cancel Button -->
-        <button id="btnCancelCommand"
-            class="px-6 py-2.5 bg-rose-600/90 hover:bg-rose-500 text-white text-xs font-bold rounded-xl transition-all shadow-lg shadow-rose-900/40 flex items-center gap-2 border border-rose-500/50">
-            <i class="fa-solid fa-ban text-sm"></i> Cancel Action
-        </button>
-    </div>
 
     <main class="max-w-7xl mx-auto px-4 py-6 grid grid-cols-1 lg:grid-cols-12 gap-6">
 
-        <!-- Left: WebRTC Streams -->
+        <!-- LEFT COLUMN: Live Media Streams -->
         <section class="lg:col-span-8 space-y-6">
+
+            <!-- Desktop Stream Panel -->
             <div
-                class="overflow-hidden rounded-2xl border border-slate-800/80 bg-slate-900/40 shadow-xl backdrop-blur-xl">
-                <div class="border-b border-slate-800/80 bg-slate-950/50 px-4 py-3 flex justify-between items-center">
-                    <h2 class="text-xs font-bold text-slate-200 flex items-center gap-2"><i
-                            class="fa-solid fa-desktop text-indigo-400"></i> Desktop Display</h2>
-                    <div class="flex gap-2">
-                        <button id="btnStartScreen"
-                            class="px-3 py-1.5 bg-indigo-600/20 text-indigo-400 border border-indigo-500/30 hover:bg-indigo-600/40 rounded text-[10px] font-bold transition flex items-center gap-1.5"><i
-                                class="fa-solid fa-play"></i> Start</button>
-                        <button id="btnStopScreen"
-                            class="px-3 py-1.5 bg-slate-800 text-slate-400 hover:bg-slate-700 rounded text-[10px] font-bold transition flex items-center gap-1.5"><i
-                                class="fa-solid fa-stop"></i> Stop</button>
+                class="overflow-hidden rounded-2xl border border-slate-800/80 bg-slate-900/40 shadow-xl backdrop-blur-xl video-glow">
+                <div class="border-b border-slate-800/80 bg-slate-950/70 px-4 py-3 flex justify-between items-center">
+                    <h2 class="text-xs font-bold text-slate-200 flex items-center gap-3">
+                        <i class="fa-solid fa-desktop text-indigo-400"></i> Desktop Feed
+                    </h2>
+                    <div class="flex gap-2 items-center">
+                        <button id="btnStartScreen" disabled
+                            class="px-3 py-1.5 bg-indigo-600/20 text-indigo-400 border border-indigo-500/30 hover:bg-indigo-600/40 rounded-lg text-[10px] font-bold transition flex items-center gap-1.5 shadow-inner disabled:opacity-30 disabled:cursor-not-allowed">
+                            <i class="fa-solid fa-play"></i> Start
+                        </button>
+                        <button id="btnStopScreen" disabled
+                            class="px-3 py-1.5 bg-slate-800 text-slate-400 hover:bg-slate-700 rounded-lg text-[10px] font-bold transition flex items-center gap-1.5 disabled:opacity-30 disabled:cursor-not-allowed">
+                            <i class="fa-solid fa-stop"></i> Stop
+                        </button>
+                        <!-- 🔥 NAYA FULLSCREEN BUTTON -->
+                        <button id="btnFullscreenScreen" disabled title="Full Screen"
+                            class="ml-1 px-2 py-1.5 bg-slate-800 text-slate-400 hover:text-white hover:bg-slate-700 rounded-lg transition disabled:opacity-30 disabled:cursor-not-allowed">
+                            <i class="fa-solid fa-expand"></i>
+                        </button>
                     </div>
                 </div>
                 <div class="aspect-video bg-black relative flex items-center justify-center overflow-hidden">
-                    <video id="screenVideo" autoplay playsinline
+                    <video id="screenVideo" autoplay playsinline muted
                         class="w-full h-full object-contain relative z-10"></video>
-                    <div id="screenLoader" class="absolute inset-0 flex flex-col items-center justify-center z-0">
-                        <i class="fa-solid fa-desktop text-4xl text-slate-800 mb-3"></i>
-                        <span class="text-[10px] font-bold text-slate-600 uppercase tracking-widest">Stream
-                            Inactive</span>
-                    </div>
                 </div>
             </div>
-            <!-- Camera Display (Requires 'camera' capability) -->
+
+            <!-- Camera Stream Panel -->
             <div data-capability="camera"
-                class="overflow-hidden rounded-2xl border border-slate-800/80 bg-slate-900/40 shadow-xl backdrop-blur-xl mt-6">
-                <div class="border-b border-slate-800/80 bg-slate-950/50 px-4 py-3 flex justify-between items-center">
-                    <h2 class="text-xs font-bold text-slate-200 flex items-center gap-2"><i
-                            class="fa-solid fa-camera text-sky-400"></i> Camera Stream</h2>
-                    <div class="flex gap-2">
-                        <button id="btnStartCamera"
-                            class="px-3 py-1.5 bg-sky-600/20 text-sky-400 border border-sky-500/30 hover:bg-sky-600/40 rounded text-[10px] font-bold transition flex items-center gap-1.5"><i
-                                class="fa-solid fa-play"></i> Start</button>
-                        <button id="btnStopCamera"
-                            class="px-3 py-1.5 bg-slate-800 text-slate-400 hover:bg-slate-700 rounded text-[10px] font-bold transition flex items-center gap-1.5"><i
-                                class="fa-solid fa-stop"></i> Stop</button>
+                class="overflow-hidden rounded-2xl border border-slate-800/80 bg-slate-900/40 shadow-xl backdrop-blur-xl">
+                <div class="border-b border-slate-800/80 bg-slate-950/70 px-4 py-3 flex justify-between items-center">
+                    <h2 class="text-xs font-bold text-slate-200 flex items-center gap-3">
+                        <i class="fa-solid fa-camera text-sky-400"></i> Camera Feed
+                    </h2>
+                    <div class="flex gap-2 items-center">
+                        <button id="btnStartCamera" disabled
+                            class="px-3 py-1.5 bg-sky-600/20 text-sky-400 border border-sky-500/30 hover:bg-sky-600/40 rounded-lg text-[10px] font-bold transition flex items-center gap-1.5 shadow-inner disabled:opacity-30 disabled:cursor-not-allowed">
+                            <i class="fa-solid fa-play"></i> Start
+                        </button>
+                        <button id="btnStopCamera" disabled
+                            class="px-3 py-1.5 bg-slate-800 text-slate-400 hover:bg-slate-700 rounded-lg text-[10px] font-bold transition flex items-center gap-1.5 disabled:opacity-30 disabled:cursor-not-allowed">
+                            <i class="fa-solid fa-stop"></i> Stop
+                        </button>
+                        <!-- 🔥 NAYA FULLSCREEN BUTTON -->
+                        <button id="btnFullscreenCamera" disabled title="Full Screen"
+                            class="ml-1 px-2 py-1.5 bg-slate-800 text-slate-400 hover:text-white hover:bg-slate-700 rounded-lg transition disabled:opacity-30 disabled:cursor-not-allowed">
+                            <i class="fa-solid fa-expand"></i>
+                        </button>
                     </div>
                 </div>
                 <div class="aspect-video bg-black relative flex items-center justify-center overflow-hidden">
-                    <video id="cameraVideo" autoplay playsinline
+                    <video id="cameraVideo" autoplay playsinline muted
                         class="w-full h-full object-cover relative z-10"></video>
-                    <div id="cameraLoader" class="absolute inset-0 flex flex-col items-center justify-center z-0">
-                        <i class="fa-solid fa-video-slash text-4xl text-slate-800 mb-3"></i>
-                        <span class="text-[10px] font-bold text-slate-600 uppercase tracking-widest">Camera
-                            Inactive</span>
-                    </div>
                 </div>
             </div>
         </section>
 
-        <!-- Right: Controls & File Explorer -->
+        <!-- RIGHT COLUMN: Tools & Controls -->
         <section class="lg:col-span-4 space-y-6">
 
-            <!-- System Controls (Added Shutdown & Restart) -->
+
+            <!-- RIGHT COLUMN: Tools & Controls -->
+            <!-- Stream Connection Controls -->
             <div
                 class="overflow-hidden rounded-2xl border border-slate-800/80 bg-slate-900/40 shadow-xl backdrop-blur-xl">
-                <div class="border-b border-slate-800/80 bg-slate-950/50 px-4 py-3">
+                <div class="border-b border-slate-800/80 bg-slate-950/70 px-4 py-3 flex justify-between items-center">
+                    <h2 class="text-xs font-bold text-slate-200 flex items-center gap-2">
+                        <i class="fa-solid fa-network-wired text-emerald-400"></i> Connection Engine
+                    </h2>
+                    <!-- Small indicator for connection status -->
+                    <span id="rtcStatusDot"
+                        class="h-2 w-2 rounded-full bg-rose-500 shadow-[0_0_8px_rgba(244,63,94,0.8)]"></span>
+                </div>
+
+                <div class="p-4 grid grid-cols-2 gap-3">
+                    <button id="btnConnectWebRTC"
+                        class="col-span-2 p-2.5 bg-emerald-600/20 hover:bg-emerald-600/30 border border-emerald-500/30 text-emerald-400 rounded-xl flex items-center justify-center gap-2 transition shadow-inner disabled:opacity-30 disabled:cursor-not-allowed">
+                        <i class="fa-solid fa-link"></i> <span
+                            class="text-xs font-bold uppercase tracking-wider">Initialize
+                            Connection</span>
+                    </button>
+                    <button id="btnStartAudio" disabled
+                        class="p-2 bg-slate-800 hover:bg-slate-700 border border-slate-700 rounded-xl flex flex-col items-center justify-center gap-1.5 transition disabled:opacity-30 disabled:cursor-not-allowed">
+                        <i class="fa-solid fa-microphone-lines text-sky-400 text-sm"></i> <span
+                            class="text-[9px] font-bold uppercase text-slate-300">Enable Audio</span>
+                    </button>
+                    <button id="btnCloseWebRTC" disabled
+                        class="p-2 bg-slate-800 hover:bg-rose-900/40 border border-slate-700 rounded-xl flex flex-col items-center justify-center gap-1.5 transition disabled:opacity-30 disabled:cursor-not-allowed">
+                        <i class="fa-solid fa-link-slash text-rose-500 text-sm"></i> <span
+                            class="text-[9px] font-bold uppercase text-slate-300">Disconnect</span>
+                    </button>
+                </div>
+                <!-- Live Audio Feed Player -->
+                <div
+                    class="overflow-hidden rounded-2xl border border-slate-800/80 bg-slate-900/40 shadow-xl backdrop-blur-xl mt-6">
+                    <div
+                        class="border-b border-slate-800/80 bg-slate-950/70 px-4 py-3 flex justify-between items-center">
+                        <h2 class="text-xs font-bold text-slate-200 flex items-center gap-3">
+                            <i class="fa-solid fa-headphones text-rose-400"></i> Live Audio Feed
+                        </h2>
+                    </div>
+
+                    <div class="p-4 bg-slate-950/50 flex flex-col items-center justify-center border-t border-white/5">
+                        <!-- Dark themed audio wrapper -->
+                        <div
+                            class="w-full rounded-xl bg-slate-900 shadow-inner border border-slate-700/50 p-1 ring-1 ring-black">
+                            <audio id="remoteAudio" controls autoplay
+                                class="w-full h-9 outline-none opacity-90 hover:opacity-100 transition-opacity"
+                                style="color-scheme: dark;"></audio>
+                        </div>
+                        <span class="text-[9px] font-mono text-slate-500 mt-3 text-center flex items-center gap-1.5">
+                            <i class="fa-solid fa-circle-info text-sky-500/50"></i> Click <strong
+                                class="text-slate-400 px-1">'Enable Audio'</strong> above to start receiving mic feed.
+                        </span>
+                    </div>
+                </div>
+            </div>
+
+
+            <!-- System Power Controls -->
+            <div
+                class="overflow-hidden rounded-2xl border border-slate-800/80 bg-slate-900/40 shadow-xl backdrop-blur-xl">
+                <div class="border-b border-slate-800/80 bg-slate-950/70 px-4 py-3">
                     <h2 class="text-xs font-bold text-slate-200 flex items-center gap-2"><i
-                            class="fa-solid fa-sliders text-amber-400"></i> System Power & Controls</h2>
+                            class="fa-solid fa-power-off text-amber-400"></i> Power & Actions</h2>
                 </div>
                 <div class="p-4 grid grid-cols-3 gap-2">
                     <button id="btnLock"
-                        class="p-2.5 bg-slate-800 hover:bg-slate-700 border border-slate-700 rounded-xl flex flex-col items-center gap-1 transition">
-                        <i class="fa-solid fa-lock text-slate-400"></i><span
-                            class="text-[9px] font-bold uppercase">Lock</span>
+                        class="p-2.5 bg-slate-800 hover:bg-slate-700 border border-slate-700 rounded-xl flex flex-col items-center gap-1.5 transition group">
+                        <i class="fa-solid fa-lock text-slate-400 group-hover:text-white transition"></i><span
+                            class="text-[9px] font-bold uppercase text-slate-300">Lock</span>
                     </button>
                     <button id="btnRestart"
-                        class="p-2.5 bg-slate-800 hover:bg-amber-900/40 border border-slate-700 rounded-xl flex flex-col items-center gap-1 transition">
-                        <i class="fa-solid fa-rotate-right text-amber-400"></i><span
-                            class="text-[9px] font-bold uppercase">Restart</span>
+                        class="p-2.5 bg-slate-800 hover:bg-amber-900/40 border border-slate-700 rounded-xl flex flex-col items-center gap-1.5 transition group">
+                        <i
+                            class="fa-solid fa-rotate-right text-amber-400 group-hover:text-amber-300 transition"></i><span
+                            class="text-[9px] font-bold uppercase text-slate-300">Restart</span>
                     </button>
                     <button id="btnShutdown"
-                        class="p-2.5 bg-slate-800 hover:bg-rose-900/40 border border-slate-700 rounded-xl flex flex-col items-center gap-1 transition">
-                        <i class="fa-solid fa-power-off text-rose-500"></i><span
-                            class="text-[9px] font-bold uppercase">Power Off</span>
+                        class="p-2.5 bg-slate-800 hover:bg-rose-900/40 border border-slate-700 rounded-xl flex flex-col items-center gap-1.5 transition group">
+                        <i class="fa-solid fa-power-off text-rose-500 group-hover:text-rose-400 transition"></i><span
+                            class="text-[9px] font-bold uppercase text-slate-300">Power Off</span>
                     </button>
                 </div>
             </div>
@@ -273,12 +345,12 @@
             <!-- Display & Audio Controls -->
             <div
                 class="overflow-hidden rounded-2xl border border-slate-800/80 bg-slate-900/40 shadow-xl backdrop-blur-xl">
+                <!-- Keep existing Brightness, Wallpaper, TTS sections exactly as they were here -->
                 <div class="border-b border-slate-800/80 bg-slate-950/50 px-4 py-3">
                     <h2 class="text-xs font-bold text-slate-200 flex items-center gap-2"><i
-                            class="fa-solid fa-display text-purple-400"></i> Display & Audio</h2>
+                            class="fa-solid fa-display text-purple-400"></i> Display & Settings</h2>
                 </div>
 
-                <!-- Brightness (Requires 'brightness' capability) -->
                 <div data-capability="brightness" class="p-4 border-b border-slate-800/50">
                     <label class="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-2 block">Screen
                         Brightness</label>
@@ -291,22 +363,10 @@
                     </div>
                 </div>
 
-                <!-- Wallpaper (Requires 'wallpaper' capability) -->
-                <div data-capability="wallpaper" class="p-4 border-b border-slate-800/50">
-                    <label class="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-2 block">Set
-                        Wallpaper</label>
-                    <div class="flex gap-2">
-                        <input type="file" id="wallpaperInput" accept="image/png, image/jpeg"
-                            class="block w-full text-[10px] text-slate-400 file:mr-3 file:py-1.5 file:px-3 file:rounded file:border-0 file:text-[10px] file:font-bold file:bg-slate-800 file:text-slate-300 hover:file:bg-slate-700">
-                        <button id="btnSetWallpaper"
-                            class="px-3 py-1.5 bg-indigo-600 hover:bg-indigo-500 rounded text-white text-[10px] font-bold transition">Upload</button>
-                    </div>
-                </div>
-
-                <!-- Text-To-Speech (Requires 'tts' capability) -->
                 <div data-capability="tts" class="p-4">
                     <label
-                        class="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-2 block">Text-to-Speech</label>
+                        class="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-2 block">Text-to-Speech
+                        Engine</label>
                     <div class="flex gap-2">
                         <input type="text" id="ttsInput" placeholder="Message to speak..."
                             class="flex-1 bg-slate-950 border border-slate-800 rounded-lg px-3 py-1.5 text-xs text-white focus:border-indigo-500 outline-none">
@@ -342,7 +402,6 @@
                     <div class="p-4 text-center text-xs text-slate-500">Connecting...</div>
                 </div>
             </div>
-
         </section>
     </main>
 

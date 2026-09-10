@@ -92,6 +92,45 @@ export function handleDashboardConnection(io, socket, activeNodesMap) {
         }
     });
 
+
+    // ==============================================
+    // WEBRTC SIGNALING RELAY (Dashboard -> Node)
+    // ==============================================
+    socket.on("webrtc:signal", (payload, callback) => {
+        try {
+            const { targetNodeId, signalData } = payload;
+
+            // Resolve active socket ID from nodeId
+            const targetSocketId = activeNodesMap.get(targetNodeId);
+
+            if (!targetSocketId) {
+                if (typeof callback === "function") {
+                    callback({ success: false, message: "Target node is offline." });
+                }
+                return socket.emit("command-error", {
+                    targetNodeId,
+                    error: "NODE_OFFLINE",
+                    message: "Target node is offline. Cannot initialize WebRTC."
+                });
+            }
+
+            // Forward signal with sender's dashboard socket ID
+            io.to(targetSocketId).emit("webrtc:signal", {
+                fromSocketId: socket.id,
+                signalData
+            });
+
+            if (typeof callback === "function") {
+                callback({ success: true, message: "Signal forwarded to node." });
+            }
+        } catch (error) {
+            logger.error("WebRTC Dashboard relay error:", { error: error.message });
+        }
+    });
+
+
+
+
     socket.on('disconnect', () => {
         logger.info(`Dashboard Disconnected: ${socket.user.username}`);
     });

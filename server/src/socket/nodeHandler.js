@@ -49,6 +49,28 @@ export async function handleNodeConnection(io, socket, activeDashboards) {
             });
         });
 
+
+        // ==============================================
+        // WEBRTC SIGNALING RELAY (Node -> Dashboard)
+        // ==============================================
+        socket.on("webrtc:signal", (payload) => {
+            try {
+                const { targetSocketId, signalData } = payload;
+
+                if (targetSocketId) {
+                    io.to(targetSocketId).emit("webrtc:signal", {
+                        fromNodeId: socket.nodeId,
+                        signalData
+                    });
+                }
+            } catch (error) {
+                logger.error("WebRTC Node relay error:", { error: error.message });
+            }
+        });
+
+
+
+
         // Disconnect Handler
         socket.on('disconnect', async (reason) => {
             logger.info(`Node Disconnected: ${nodeData.hostname} (ID: ${nodeId}) - Reason: ${reason}`);
