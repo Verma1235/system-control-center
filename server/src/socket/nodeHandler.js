@@ -53,10 +53,10 @@ export async function handleNodeConnection(io, socket, activeDashboards) {
         // ==============================================
         // WEBRTC SIGNALING RELAY (Node -> Dashboard)
         // ==============================================
+        // nodeHandler.js ke andar:
         socket.on("webrtc:signal", (payload) => {
             try {
                 const { targetSocketId, signalData } = payload;
-
                 if (targetSocketId) {
                     io.to(targetSocketId).emit("webrtc:signal", {
                         fromNodeId: socket.nodeId,
@@ -64,11 +64,9 @@ export async function handleNodeConnection(io, socket, activeDashboards) {
                     });
                 }
             } catch (error) {
-                logger.error("WebRTC Node relay error:", { error: error.message });
+                logger.error("Node signaling error:", { error: error.message });
             }
         });
-
-
 
 
         // Disconnect Handler

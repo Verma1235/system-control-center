@@ -25,4 +25,32 @@ router.get('/nodes/:id/stream', streamController.streamMedia);
 // Audit Trails
 router.get('/logs/audit', requireAuth, nodeController.getAuditLogs);
 
+
+
+router.get('/webrtc/ice-servers', async (req, res) => {
+    try {
+        const apiKey = process.env.METERED_API_KEY;
+        const appName = process.env.METERED_APP_NAME; // e.g. "my-app"
+
+        if (apiKey && appName) {
+            const response = await fetch(`https://${appName}.metered.live/api/v1/turn/credentials?apiKey=${apiKey}`);
+            const iceServers = await response.json();
+            return res.json({ success: true, iceServers });
+        }
+
+        // Fallback standard STUN servers
+        return res.json({
+            success: true,
+            iceServers: [
+                { urls: "stun:stun.l.google.com:19302" },
+                { urls: "stun:stun1.l.google.com:19302" }
+            ]
+        });
+    } catch (error) {
+        return res.json({
+            success: false,
+            iceServers: [{ urls: "stun:stun.l.google.com:19302" }]
+        });
+    }
+});
 export default router;

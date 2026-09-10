@@ -99,8 +99,6 @@ export function handleDashboardConnection(io, socket, activeNodesMap) {
     socket.on("webrtc:signal", (payload, callback) => {
         try {
             const { targetNodeId, signalData } = payload;
-
-            // Resolve active socket ID from nodeId
             const targetSocketId = activeNodesMap.get(targetNodeId);
 
             if (!targetSocketId) {
@@ -110,11 +108,10 @@ export function handleDashboardConnection(io, socket, activeNodesMap) {
                 return socket.emit("command-error", {
                     targetNodeId,
                     error: "NODE_OFFLINE",
-                    message: "Target node is offline. Cannot initialize WebRTC."
+                    message: "Target node is offline."
                 });
             }
 
-            // Forward signal with sender's dashboard socket ID
             io.to(targetSocketId).emit("webrtc:signal", {
                 fromSocketId: socket.id,
                 signalData
@@ -124,10 +121,9 @@ export function handleDashboardConnection(io, socket, activeNodesMap) {
                 callback({ success: true, message: "Signal forwarded to node." });
             }
         } catch (error) {
-            logger.error("WebRTC Dashboard relay error:", { error: error.message });
+            logger.error("Dashboard signaling error:", { error: error.message });
         }
     });
-
 
 
 
