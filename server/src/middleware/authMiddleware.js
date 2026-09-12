@@ -26,6 +26,7 @@ export function requireAuth(req, res, next) {
         });
     }
 
+    // console.log(decoded)
     req.user = decoded;
     next();
 }

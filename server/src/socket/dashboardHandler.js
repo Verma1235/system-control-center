@@ -3,65 +3,38 @@ import { registerSignalingHandlers } from '../webrtc/signalingHandler.js';
 import { db } from '../database/db.js';
 
 export function handleDashboardConnection(io, socket, activeNodesMap) {
-    logger.info(`Dashboard Connected: Admin User ${socket.user.username} (Socket: ${socket.id})`);
+    // Changed socket.user.username to socket.user.email
+    logger.info(`Dashboard Connected: Admin User ${socket.user.email} (Socket: ${socket.id})`);
 
-    // Join secure dashboard room
     socket.join('dashboards');
-
-    // 1. WebRTC Signaling
     registerSignalingHandlers(socket, io);
 
-    // 2. Command Dispatch (Dashboard -> Node)
     socket.on('dispatch-command', async (data) => {
         try {
             const { targetNodeId, encryptedEnvelope, auth = {} } = data;
-
-            console.log("AUTH Payload Received:", auth);
-
-            // Use .trim() to prevent invisible space mismatches from .env files
             const AuthPass = (process.env.DASHBOARD_CONTROLS_AUTH || "").trim();
 
             if (auth.isAuthRequired) {
                 const incomingPass = (auth.authPass || "").trim();
-
                 if (AuthPass !== incomingPass) {
-                    console.log(`Auth failed for node ${targetNodeId}. Check password.`); // Log BEFORE return
-
-                    return socket.emit("command-error", {
-                        targetNodeId,
-                        error: 'NODE_UNAUTHORIZED',
-                        message: 'Incorrect Authentication Password.'
-                    });
+                    return socket.emit("command-error", { targetNodeId, error: 'NODE_UNAUTHORIZED', message: 'Incorrect Password.' });
                 }
             }
 
-            // console.log("Auth passed or not required. Proceeding...");
-
-            // Verify the node is approved before allowing command dispatch
-            const [rows] = await db.execute('SELECT is_approved FROM nodes WHERE id = ?', [targetNodeId]);
+            const [rows] = await db.execute('SELECT is_approved, is_blocked FROM nodes WHERE id = ?', [targetNodeId]);
             const node = rows[0];
 
-            if (!node || node.is_approved === 0) {
-                return socket.emit('command-error', {
-                    targetNodeId,
-                    error: 'NODE_UNAUTHORIZED',
-                    message: 'Target node is not approved or does not exist.'
-                });
+            if (!node || node.is_approved === 0 || node.is_blocked === 1) {
+                return socket.emit('command-error', { targetNodeId, error: 'NODE_UNAUTHORIZED', message: 'Target node is not approved or blocked.' });
             }
 
-            // Find the active socket ID for this node
             const nodeSocketId = activeNodesMap.get(targetNodeId);
 
             if (nodeSocketId) {
-                // Relay the encrypted envelope to the target node
                 io.to(nodeSocketId).emit('command-request', encryptedEnvelope);
-                logger.audit(`Command dispatched to node ${targetNodeId}`, { admin: socket.user.username });
+                logger.audit(`Command dispatched to node ${targetNodeId}`, { admin: socket.user.email });
             } else {
-                socket.emit('command-error', {
-                    targetNodeId,
-                    error: 'NODE_OFFLINE',
-                    message: 'Target node is currently offline.'
-                });
+                socket.emit('command-error', { targetNodeId, error: 'NODE_OFFLINE', message: 'Target node offline.' });
             }
         } catch (error) {
             logger.error("Command dispatch error", { error: error.message });
@@ -92,6 +65,50 @@ export function handleDashboardConnection(io, socket, activeNodesMap) {
         }
     });
 
+    // ==============================================
+    // TOGGLE NODE WINDOW RELAY (Dashboard -> Node)
+    // ==============================================
+    socket.on('toggle-node-window', async (data) => {
+        try {
+            const { targetNodeId, show } = data;
+
+            if (!targetNodeId) return;
+
+            // Find the target node's socket ID
+            const nodeSocketId = activeNodesMap.get(targetNodeId);
+
+            if (nodeSocketId) {
+                // Get the actual socket instance directly instead of using io.to()
+                const nodeSocket = io.sockets.sockets.get(nodeSocketId);
+
+                if (nodeSocket) {
+                    // Now you can safely use a callback!
+                    nodeSocket.emit('toggle-window', { show: show }, (res) => {
+                        console.log(res);
+                        // Pass the response back to the dashboard
+                        socket.emit("logs", { data: res, targetNodeId });
+                    });
+
+                    logger.info(`Window toggle (show: ${show}) sent to node ${targetNodeId}`, { admin: socket.user.email });
+                } else {
+                    // Socket ID exists in map, but instance dropped
+                    socket.emit('command-error', {
+                        targetNodeId,
+                        error: 'NODE_OFFLINE',
+                        message: 'Target node socket instance dropped.'
+                    });
+                }
+            } else {
+                socket.emit('command-error', {
+                    targetNodeId,
+                    error: 'NODE_OFFLINE',
+                    message: 'Target node is currently offline. Cannot toggle window.'
+                });
+            }
+        } catch (error) {
+            logger.error("Toggle window relay error:", { error: error.message });
+        }
+    });
 
     // ==============================================
     // WEBRTC SIGNALING RELAY (Dashboard -> Node)

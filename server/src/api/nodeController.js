@@ -3,34 +3,51 @@ import { logger } from '../utils/logger.js';
 import { getActiveNodesMap } from '../socket/socketManager.js';
 
 export const nodeController = {
-    /**
-     * Get all registered nodes with their capabilities and status
-     */
     getAllNodes: async (req, res) => {
         try {
-            const [nodes] = await db.execute('SELECT * FROM nodes ORDER BY last_seen DESC');
+            const isAdminOrCoAdmin = req?.user?.role === 'admin' || req?.user?.role === 'coadmin';
+
+            let query = `
+            SELECT 
+                nodes.*, 
+                users.id AS user_id, 
+                users.full_name AS user_full_name, 
+                users.role AS user_role, 
+                users.is_blocked AS user_is_blocked, 
+                users.created_at AS user_created_at
+            FROM \`nodes\` 
+            LEFT JOIN \`users\` ON \`nodes\`.\`user_email\` = \`users\`.\`email\`
+        `;
+
+            const queryParams = [];
+
+            // If not admin, restrict the results to only the nodes belonging to this specific user
+            if (!isAdminOrCoAdmin) {
+                query += ` WHERE \`users\`.\`id\` = ? `;
+                queryParams.push(req?.user?.id);
+            }
+
+            // Apply ordering at the very end
+            query += ` ORDER BY \`nodes\`.\`last_seen\` DESC`;
+
+            // Execute dynamic query
+            const [nodes] = await db.execute(query, queryParams);
             const activeNodes = getActiveNodesMap();
 
+            // Parse capabilities and booleans once
             const parsedNodes = nodes.map(node => ({
                 ...node,
                 isOnline: activeNodes.has(node.id),
                 is_approved: Boolean(node.is_approved),
-                capabilities: node.capabilities && typeof node.capabilities === 'string'
-                    ? JSON.parse(node.capabilities)
-                    : (node.capabilities || {}) // MySQL JSON type might already return an object
+                is_registered: Boolean(node.is_registered),
+                is_blocked: Boolean(node.is_blocked)
             }));
 
-            return res.json({
-                success: true,
-                nodes: parsedNodes
-            });
+            return res.json({ success: true, nodes: parsedNodes, userData: req.user });
+
         } catch (error) {
             logger.error("Error fetching nodes list", { error: error.message });
-            return res.status(500).json({
-                success: false,
-                error: "INTERNAL_ERROR",
-                message: "Could not retrieve devices."
-            });
+            return res.status(500).json({ success: false, message: "Could not retrieve devices." });
         }
     },
 
@@ -41,11 +58,7 @@ export const nodeController = {
             const node = rows[0];
 
             if (!node) {
-                return res.status(404).json({
-                    success: false,
-                    error: "NODE_NOT_FOUND",
-                    message: "Node does not exist."
-                });
+                return res.status(404).json({ success: false, message: "Node does not exist." });
             }
 
             return res.json({
@@ -53,18 +66,12 @@ export const nodeController = {
                 node: {
                     ...node,
                     is_approved: Boolean(node.is_approved),
-                    capabilities: node.capabilities && typeof node.capabilities === 'string'
-                        ? JSON.parse(node.capabilities)
-                        : (node.capabilities || {})
+                    is_registered: Boolean(node.is_registered),
+                    is_blocked: Boolean(node.is_blocked)
                 }
             });
         } catch (error) {
-            logger.error("Error fetching single node", { error: error.message });
-            return res.status(500).json({
-                success: false,
-                error: "INTERNAL_ERROR",
-                message: "Failed to retrieve node."
-            });
+            return res.status(500).json({ success: false, message: "Failed to retrieve node." });
         }
     },
 
@@ -105,9 +112,9 @@ export const nodeController = {
             logger.audit(`Node authorization toggled: ${id} -> ${approved}`, { adminId: req.user.sub });
 
             await db.execute(`
-                INSERT INTO audit_logs (action, node_id, user_id, details, ip_address, timestamp)
-                VALUES (?, ?, ?, ?, ?, ?)
-            `, [actionName, id, req.user.sub, `Approval changed to ${approved}`, req.ip, Date.now()]);
+                INSERT INTO audit_logs(action, node_id, user_id, details, ip_address, timestamp)
+                VALUES(?, ?, ?, ?, ?, ?)
+                    `, [actionName, id, req.user.sub, `Approval changed to ${approved}`, req.ip, Date.now()]);
 
             return res.json({
                 success: true,
@@ -134,9 +141,9 @@ export const nodeController = {
             logger.audit(`Node deleted from registry: ${id}`, { adminId: req.user.sub });
 
             await db.execute(`
-                INSERT INTO audit_logs (action, node_id, user_id, details, ip_address, timestamp)
-                VALUES (?, ?, ?, ?, ?, ?)
-            `, ['DELETE_NODE', id, req.user.sub, `Node registry deleted`, req.ip, Date.now()]);
+                INSERT INTO audit_logs(action, node_id, user_id, details, ip_address, timestamp)
+                VALUES(?, ?, ?, ?, ?, ?)
+                    `, ['DELETE_NODE', id, req.user.sub, `Node registry deleted`, req.ip, Date.now()]);
 
             return res.json({
                 success: true,

@@ -138,7 +138,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
             // Load initial data
             const data = await api.getNodes();
-            DashboardUI.render(data.nodes);
+            DashboardUI.render(data.nodes, data?.userData);
 
             // Connect Real-Time Socket
             SocketManager.connect();

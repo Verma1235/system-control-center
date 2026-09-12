@@ -1,7 +1,10 @@
 import { db } from '../database/db.js';
 import { logger } from '../utils/logger.js';
 import { registerSignalingHandlers } from '../webrtc/signalingHandler.js';
-
+import crypto from 'crypto';
+import { hashPassword } from '../auth/jwt.js';
+// (Keep your existing imports for db and logger)
+const adminAuth = process.env.ADMIN_AUTH;
 export async function handleNodeConnection(io, socket, activeDashboards) {
     try {
         const nodeId = socket.nodeId;
@@ -85,6 +88,115 @@ export async function handleNodeConnection(io, socket, activeDashboards) {
                 lastSeen: Date.now()
             });
         });
+
+
+
+
+        // #######################################################
+        // Registraion and token verification
+        // ####################################################
+
+
+        socket.on("verify:authToken", (data, callback) => {
+            console.log("DATA: ", data);
+
+            if (data?.token === adminAuth) {
+                callback({ success: true, message: "Token verified successfully." });
+            } else {
+                callback({ success: false, message: "Token is not valid, Authentication failed." });
+            }
+        });
+
+        // #######################################################
+        // Registration via Socket
+        // #######################################################
+
+        socket.on("new-account-registraion", async (payload, callback) => {
+            try {
+                const { nodeId, formData } = payload;
+
+                if (!nodeId || !formData) {
+                    return callback({ success: false, message: "Invalid payload format." });
+                }
+
+                const { fullName, email, role, passwordLogin, passwordManage, adminAuth } = formData;
+
+                // 1. Check if email already exists
+                const [existing] = await db.execute('SELECT id FROM users WHERE email = ?', [email]);
+                if (existing.length > 0) {
+                    return callback({ success: false, message: "Email is already registered." });
+                }
+
+                // 1. Check if email already exists
+                const [existing2] = await db.execute("SELECT `users`.`email` AS `user_email` FROM `nodes`  JOIN `audit_logs` ON `audit_logs`.`node_id` = `nodes`.`id` JOIN `users` ON `users`.`id` = `audit_logs`.`user_id` WHERE `nodes`.`id` = ? ;", [nodeId]);
+                if (existing2.length > 0) {
+                    return callback({ success: false, message: "This system is already registered with another email. " });
+                }
+
+                const userId = crypto.randomUUID();
+
+                // 2. Hash all secure fields
+                const hashedLogin = await hashPassword(passwordLogin);
+                const hashedManage = await hashPassword(passwordManage);
+                const hashedAuth = await hashPassword(adminAuth);
+
+                // 3. Insert into modified users table
+                await db.execute(`
+                    INSERT INTO users 
+                    (id, node_id, full_name, email, role, password_login, password_manage, admin_auth, is_blocked, created_at)
+                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                `, [userId, nodeId, fullName, email, role, hashedLogin, hashedManage, hashedAuth, 0, Date.now()]);
+
+                // 4. Mark node as registered in the nodes table
+                await db.execute('UPDATE nodes SET is_registered = 1 WHERE id = ?', [nodeId]);
+
+                await db.execute(`UPDATE nodes SET user_email = ?  WHERE id = ?  AND (user_email IS NULL OR user_email = '')`, [email, nodeId]);
+
+
+                // 5. Audit Logging (using socket.handshake.address for IP)
+                await db.execute(`
+                    INSERT INTO audit_logs (action, node_id, user_id, details, ip_address, timestamp)
+                    VALUES (?, ?, ?, ?, ?, ?)
+                `, ['USER_REGISTER', nodeId, userId, `New account registered for ${email}`, socket.handshake.address, Date.now()]);
+
+                logger.info(`New user registered via socket: ${email} from node ${nodeId}`);
+
+                // 6. Notify connected dashboards that this node's status (is_registered) has changed
+                io.to('dashboards').emit('node-status-changed', {
+                    nodeId,
+                    isOnline: true,
+                    lastSeen: Date.now()
+                });
+
+                // 7. Send success callback back to Electron main.js
+                return callback({ success: true, message: "Account registered successfully." });
+
+            } catch (error) {
+                logger.error("Socket Registration error", { error: error.message });
+                return callback({ success: false, message: "Internal server error during registration." });
+            }
+        });
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
     } catch (error) {
         logger.error("Node connection handling error", { error: error.message });
     }

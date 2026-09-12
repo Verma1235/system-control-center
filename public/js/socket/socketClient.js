@@ -82,6 +82,23 @@ export const SocketManager = (() => {
                     source: "COMMAND"
                 });
             });
+
+            socket.on("logs", (data) => {
+                if (data?.data?.success) {
+                    LogsUI.add({
+                        message: `Response from ${data.targetNodeId}: ${data?.data?.message}`,
+                        type: "success",
+                        source: "NODE"
+                    });
+
+                } else {
+                    LogsUI.add({
+                        message: `Command failed for ${data.targetNodeId}: ${data?.data?.message}`,
+                        type: "error",
+                        source: "COMMAND"
+                    });
+                }
+            })
         },
 
         get: () => socket,
@@ -93,7 +110,7 @@ export const SocketManager = (() => {
             }
         }
     };
-})(); 
+})();
 
 
 

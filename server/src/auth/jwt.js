@@ -14,9 +14,12 @@ const TOKEN_EXPIRY = '12h';
 export function signToken(user) {
     return jwt.sign(
         {
-            sub: user.id,
-            username: user.username,
-            role: 'admin'
+            id: user.id,
+            username: user.full_name,
+            role: user?.role || 'user',
+            manageAuth: user?.password_manage,
+            accountStatus: user?.is_blocked,
+            email: user?.email
         },
         JWT_SECRET,
         { expiresIn: TOKEN_EXPIRY }

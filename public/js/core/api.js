@@ -19,13 +19,10 @@ async function fetchWithAuth(endpoint, options = {}) {
         headers
     });
 
-
     const data = await response.json();
 
-
-
     if (response.status === 401) {
-        // Token expired or invalid
+        // Token expired or invalid, force logout
         state.set('token', null);
         window.location.reload();
     }
@@ -38,10 +35,19 @@ async function fetchWithAuth(endpoint, options = {}) {
 }
 
 export const api = {
-    login: async (username, password) => {
+    // 1. MODIFIED FOR DB COMPATIBILITY: Expects 'email' instead of 'username'
+    login: async (email, password) => {
         return await fetchWithAuth('/auth/login', {
             method: 'POST',
-            body: JSON.stringify({ username, password })
+            body: JSON.stringify({ email, password })
+        });
+    },
+
+    // 2. NEW FEATURE: Backend Registration Route integration
+    register: async (registrationPayload) => {
+        return await fetchWithAuth('/auth/register', {
+            method: 'POST',
+            body: JSON.stringify(registrationPayload)
         });
     },
 
@@ -53,7 +59,7 @@ export const api = {
         return await fetchWithAuth('/nodes', { method: 'GET' });
     },
 
-    // 🔴 NAYA FUNCTION YAHAN ADD KAREIN:
+    // 3. PRESERVED FEATURE: Required for loading individual node management screens
     getNodeById: async (nodeId) => {
         return await fetchWithAuth(`/nodes/${nodeId}`, { method: 'GET' });
     },
