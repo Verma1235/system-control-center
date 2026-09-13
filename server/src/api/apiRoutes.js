@@ -53,5 +53,4 @@ router.get('/webrtc/ice-servers', async (req, res) => {
         });
     }
 });
-
 export default router;

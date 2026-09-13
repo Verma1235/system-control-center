@@ -24,7 +24,9 @@ async function fetchWithAuth(endpoint, options = {}) {
     if (response.status === 401) {
         // Token expired or invalid, force logout
         state.set('token', null);
-        window.location.reload();
+        // ✨ FIXED: Redirect to main index (where the auth modal is) instead of reloading node.html
+        window.location.href = '/index.html';
+        return; // Prevent any further execution
     }
 
     if (!response.ok) {

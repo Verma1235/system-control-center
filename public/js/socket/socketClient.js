@@ -69,7 +69,8 @@ export const SocketManager = (() => {
 
                 try {
                     const res = await api.getNodes();
-                    DashboardUI.render(res.nodes);
+                    // ✨ FIXED: Added res.userData as the second argument
+                    DashboardUI.render(res.nodes, res.userData);
                 } catch (e) {
                     console.error("Failed to refresh nodes", e);
                 }

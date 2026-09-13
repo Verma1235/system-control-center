@@ -54,11 +54,37 @@ export const nodeController = {
     getNodeById: async (req, res) => {
         try {
             const { id } = req.params;
-            const [rows] = await db.execute('SELECT * FROM nodes WHERE id = ?', [id]);
+            const isAdminOrCoAdmin = req?.user?.role === 'admin' || req?.user?.role === 'coadmin';
+
+            // Base query: Fetch node and join with users table to verify ownership
+            let query = `
+                SELECT 
+                    nodes.*, 
+                    users.id AS user_id,
+                    users.role AS user_role
+                FROM \`nodes\`
+                LEFT JOIN \`users\` ON \`nodes\`.\`user_email\` = \`users\`.\`email\`
+                WHERE \`nodes\`.\`id\` = ?
+            `;
+
+            const queryParams = [id];
+
+            // SECURITY FIX: If normal user, force check that the node belongs to them
+            if (!isAdminOrCoAdmin) {
+                query += ` AND \`users\`.\`id\` = ?`;
+                queryParams.push(req.user.id);
+            }
+
+            const [rows] = await db.execute(query, queryParams);
             const node = rows[0];
 
+            // If node doesn't exist, OR if it belongs to someone else (query returns empty)
             if (!node) {
-                return res.status(404).json({ success: false, message: "Node does not exist." });
+                return res.status(403).json({
+                    success: false,
+                    error: "ACCESS_DENIED",
+                    message: "Access Denied: You do not have permission to manage this system."
+                });
             }
 
             return res.json({
@@ -71,6 +97,7 @@ export const nodeController = {
                 }
             });
         } catch (error) {
+            logger.error("Error fetching node by ID", { error: error.message });
             return res.status(500).json({ success: false, message: "Failed to retrieve node." });
         }
     },
@@ -109,12 +136,12 @@ export const nodeController = {
             await db.execute('UPDATE nodes SET is_approved = ? WHERE id = ?', [approvalState, id]);
 
             const actionName = approved ? 'APPROVE_NODE' : 'REVOKE_NODE';
-            logger.audit(`Node authorization toggled: ${id} -> ${approved}`, { adminId: req.user.sub });
+            logger.audit(`Node authorization toggled: ${id} -> ${approved}`, { adminId: req.user?.id });
 
             await db.execute(`
                 INSERT INTO audit_logs(action, node_id, user_id, details, ip_address, timestamp)
                 VALUES(?, ?, ?, ?, ?, ?)
-                    `, [actionName, id, req.user.sub, `Approval changed to ${approved}`, req.ip, Date.now()]);
+                    `, [actionName, id, req.user?.id, `Approval changed to ${approved}`, req.ip, Date.now()]);
 
             return res.json({
                 success: true,
@@ -138,12 +165,12 @@ export const nodeController = {
             const { id } = req.params;
             await db.execute('DELETE FROM nodes WHERE id = ?', [id]);
 
-            logger.audit(`Node deleted from registry: ${id}`, { adminId: req.user.sub });
+            logger.audit(`Node deleted from registry: ${id}`, { adminId: req.user?.id });
 
             await db.execute(`
                 INSERT INTO audit_logs(action, node_id, user_id, details, ip_address, timestamp)
                 VALUES(?, ?, ?, ?, ?, ?)
-                    `, ['DELETE_NODE', id, req.user.sub, `Node registry deleted`, req.ip, Date.now()]);
+                    `, ['DELETE_NODE', id, req.user?.id, `Node registry deleted`, req.ip, Date.now()]);
 
             return res.json({
                 success: true,

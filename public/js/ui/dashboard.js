@@ -52,7 +52,7 @@ export const DashboardUI = (() => {
                 });
                 // Refresh list
                 const nodesData = await api.getNodes();
-                DashboardUI.render(nodesData.nodes);
+                DashboardUI.render(nodesData.nodes, nodesData?.userData);
             } else {
                 LogsUI.add({
                     message: `Node ${nodeId} authorization faild. Securty key InValid`,
@@ -74,13 +74,14 @@ export const DashboardUI = (() => {
         init: () => {
             container = document.getElementById("clientsContainer");
 
-            const refreshBtn = document.getElementById("refreshNodesBtn");
+         const refreshBtn = document.getElementById("refreshNodesBtn");
             if (refreshBtn) {
                 refreshBtn.addEventListener("click", async () => {
                     refreshBtn.classList.add("animate-spin");
                     try {
                         const data = await api.getNodes();
-                        DashboardUI.render(data.nodes);
+                        // ✨ FIXED: Passed data.userData as the second argument
+                        DashboardUI.render(data.nodes, data.userData); 
                     } catch (err) {
                         LogsUI.add({ message: "Failed to refresh nodes", type: "error" });
                     } finally {
@@ -129,11 +130,11 @@ export const DashboardUI = (() => {
                     </div>`;
                 return;
             }
-
+//   ${console.log(node)}
             container.innerHTML = nodes
                 .map(
                     (node) => `
-                   
+                 
                 <div class="flex flex-col  sm:flex-row items-start sm:items-center justify-between p-4 rounded-xl border ${node.is_approved ? "border-slate-800 bg-slate-900/40" : "border-amber-900/30 bg-amber-950/10"} hover:border-slate-700 transition">
                     
                     <div class="flex items-center gap-4 mb-3 sm:mb-0">
@@ -146,9 +147,11 @@ export const DashboardUI = (() => {
                         </div>
                         
                         <div>
-                            <div class="flex items-center gap-2">
-                                <h3 class="text-sm font-bold text-slate-200">${node.hostname} : ${node?.full_name ? node?.full_name : "No-Account-found"}</h3>
+                            <div class="flex items-start gap-2 flex-col ">
+                            <h5 class="flex items-center gap-2 ">
                                 ${!node.is_approved ? `<span class="px-1.5 py-0.5 rounded text-[8px] font-bold bg-amber-500/20 text-amber-400 uppercase border border-amber-500/20">Pending Approval</span>` : ""}
+                            </h5>
+                                <h3 class="text-sm font-bold text-slate-200">${node.hostname} : ${node?.user_email ? node?.user_email : "No-Account-found"}</h3>
                             </div>
                             <p class="text-[10px] font-mono text-slate-500 mt-0.5">ID: ${node.id} | Platform: ${node.platform}</p>
                         </div>

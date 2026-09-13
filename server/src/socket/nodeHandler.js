@@ -127,9 +127,10 @@ export async function handleNodeConnection(io, socket, activeDashboards) {
                     return callback({ success: false, message: "Email is already registered." });
                 }
 
-                // 1. Check if email already exists
-                const [existing2] = await db.execute("SELECT `users`.`email` AS `user_email` FROM `nodes`  JOIN `audit_logs` ON `audit_logs`.`node_id` = `nodes`.`id` JOIN `users` ON `users`.`id` = `audit_logs`.`user_id` WHERE `nodes`.`id` = ? ;", [nodeId]);
-                if (existing2.length > 0) {
+                // 1. Check if node already registered with another email
+                // const [existing2] = await db.execute("SELECT `users`.`email` AS `user_email` FROM `nodes`  JOIN `audit_logs` ON `audit_logs`.`node_id` = `nodes`.`id` JOIN `users` ON `users`.`id` = `audit_logs`.`user_id` WHERE `nodes`.`id` = ? ;", [nodeId]);
+                const [existing2] = await db.execute(`SELECT user_email FROM nodes WHERE id = ? `, [nodeId]);
+                if (existing2.length > 0 && !(existing2[0].user_email === null || existing2[0].user_email === undefined || existing2[0].user_email === '')) {
                     return callback({ success: false, message: "This system is already registered with another email. " });
                 }
 

@@ -129,7 +129,7 @@ export const authController = {
     changePassword: async (req, res) => {
         try {
             const { oldPassword, newPassword } = req.body;
-            const userId = req.user.sub;
+            const userId = req.user?.id;
 
             if (!oldPassword || !newPassword || newPassword.length < 8) {
                 return res.status(400).json({
