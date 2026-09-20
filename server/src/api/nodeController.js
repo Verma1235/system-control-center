@@ -14,7 +14,8 @@ export const nodeController = {
                 users.full_name AS user_full_name, 
                 users.role AS user_role, 
                 users.is_blocked AS user_is_blocked, 
-                users.created_at AS user_created_at
+                users.created_at AS user_created_at,
+                users.password_manage AS user_manage_auth
             FROM \`nodes\` 
             LEFT JOIN \`users\` ON \`nodes\`.\`user_email\` = \`users\`.\`email\`
         `;

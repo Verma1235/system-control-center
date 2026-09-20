@@ -75,5 +75,9 @@ export const api = {
 
     deleteNode: async (nodeId) => {
         return await fetchWithAuth(`/nodes/${nodeId}`, { method: 'DELETE' });
+    },
+    manageControl: async (nodeId) => {
+        return await fetchWithAuth(`/nodes/manage/${nodeId}`)
+
     }
 };

@@ -158,5 +158,37 @@ export const authController = {
             logger.error("Change password error", { error: error.message });
             return res.status(500).json({ success: false, message: "Failed to update password." });
         }
-    }
+    },
+    verifyAccess: async (req, res) => {
+        try {
+            const { node, password } = req.body;
+            const userData = req?.user;
+            // console.log("NODE DATA:", node);
+
+            // .env file se password get karna
+            const envPassword = process.env.ADMIN_AUTH;
+            const isMatch = await verifyPassword(node?.user_manage_auth, password);
+            // Agar kisi ne blank password bheja hai
+            if (!password) {
+                return res.status(400).json({ success: false, message: "Password is required" });
+            }
+
+            // Password compare karna
+            if (password === envPassword) {
+                // Success hone par response bhejna
+                // Tip: Aap yahan security ke liye JWT token ya HttpOnly Cookie bhi set kar sakte hain
+                return res.json({ success: true, message: "Access Granted", nodeId: node?.id });
+            } else if (isMatch) {
+                return res.json({ success: true, message: "Access Granted", nodeId: node?.id });
+            } else {
+                // Password galat hone par
+                return res.status(401).json({ success: false, message: "Incorrect Password" });
+            }
+
+        } catch (error) {
+            console.error("Verification Error:", error);
+            return res.status(500).json({ success: false, message: error?.message || "Internal Server Error" });
+        }
+    },
+
 };

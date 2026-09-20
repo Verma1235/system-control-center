@@ -69,26 +69,48 @@ export const DashboardUI = (() => {
             LogsUI.add({ message: error.message, type: "error", source: "API" });
         }
     };
-
-    window.manageHandeller = async (nodeId) => {
+    window.manageHandeller = async (node, userData = {}) => {
         try {
+            if (userData?.role === "admin" || userData?.role === "coadmin") {
+                let pass = await window.customPrompt("Enter your security password.");
+                if (!pass) return;
 
-            let pass = await window.customPrompt("Enter your security password.");
-            window.customAlert(pass, "info")
+                // 1. Fetch token from your state manager
+                const token = state.get('token');
 
+                // 2. Build headers dynamically
+                const headers = {
+                    'Content-Type': 'application/json'
+                };
 
+                // 3. Attach Authorization header if token exists
+                if (token) {
+                    headers['Authorization'] = `Bearer ${token}`;
+                }
 
+                // 4. Send request with merged headers
+                const response = await fetch('/api/verify-node-access', {
+                    method: 'POST',
+                    headers: headers,
+                    body: JSON.stringify({ node: JSON.parse(node), password: pass })
+                });
 
+                const data = await response.json();
 
+                if (data.success) {
+                    window.location.href = `/node.html?id=${data?.nodeId}`;
+                } else {
+                    window.customAlert("Incorrect Password!", "error");
+                }
 
+            } else if (userData?.role === "user") {
+                window.location.href = `/node.html?id=${nodeId}`;
+            }
         } catch (error) {
             console.log(error?.message);
-            LogsUI.add({ message: error?.message, type: "error", source: "API" })
+            window.customAlert("Something went wrong", "error");
         }
-
-
-
-    }
+    };
 
     return {
         init: () => {
@@ -153,6 +175,8 @@ export const DashboardUI = (() => {
             console.log("NODES:", nodes);
             console.log("USERDATA:", userData);
 
+            window.sendUserDataToQueryManager(userData);
+
             container.innerHTML = nodes
                 .map(
                     (node) => `
@@ -175,7 +199,7 @@ export const DashboardUI = (() => {
                             </h5>
                                 <h3 class="text-sm font-bold text-slate-200">${node.hostname} : ${node?.user_email ? node?.user_email : "No-Account-found"}</h3>
                             </div>
-                            <p class="text-[10px] font-mono text-slate-500 mt-0.5">${userData?.username ? `USER: ${userData?.username}` : `ID: ${node.id}`} | Platform: ${node.platform}</p>
+                            <p class="text-[10px] font-mono text-slate-500 mt-0.5">${node?.user_full_name ? `USER: ${node?.user_full_name}` : `ID: ${node.id}`} | Platform: ${node.platform}</p>
                         </div>
                     </div>
 
@@ -207,13 +231,20 @@ export const DashboardUI = (() => {
 
                         
                   <!-- Management Button (Only if Approved) -->
-                  ${node.is_approved
+                  ${(userData?.role == 'admin') || (userData?.role == 'coadmin') ? `
+                ${node.is_approved
+                                ? `<button class="flex-1 sm:flex-none px-3 py-1.5 bg-indigo-600 hover:bg-indigo-500 text-white text-[10px] font-bold rounded shadow transition ${!node.isOnline ? "opacity-50 cursor-not-allowed" : ""}" onclick="window.manageHandeller('${JSON.stringify(node).replace(/"/g, '&quot;')}', ${JSON.stringify(userData).replace(/"/g, '&quot;')})" ${!node.isOnline ? "disabled" : ""}>Manage</button>`
+                                : ""
+                            }
+                    
+                    ` : `${node.is_approved
                             ? `<button class="flex-1 sm:flex-none px-3 py-1.5 bg-indigo-600 hover:bg-indigo-500 text-white text-[10px] font-bold rounded shadow transition ${!node.isOnline ? "opacity-50 cursor-not-allowed" : ""}" onclick="window.location.href='/node.html?id=${node.id}'" ${!node.isOnline ? "disabled" : ""}>Manage</button>`
                             : ""
-                        }
+                        }`}
+           
                   
                   <!-- Approval Toggle -->
-                ${(userData?.role == 'admin') || (userData?.role == 'admin') ? `<button class="flex-1 sm:flex-none px-3 py-1.5 ${node.is_approved ? " bg-rose-900/30 text-rose-400 hover:bg-rose-900/50 border border-rose-900/50" : "bg-emerald-900/30 text-emerald-400 hover:bg-emerald-900/50 border border-emerald-900/50"} text-[10px] font-bold rounded transition" onclick = "window.toggleApproval('${node.id}', ${node.is_approved})" >
+                ${(userData?.role == 'admin') || (userData?.role == 'coadmin') ? `<button class="flex-1 sm:flex-none px-3 py-1.5 ${node.is_approved ? " bg-rose-900/30 text-rose-400 hover:bg-rose-900/50 border border-rose-900/50" : "bg-emerald-900/30 text-emerald-400 hover:bg-emerald-900/50 border border-emerald-900/50"} text-[10px] font-bold rounded transition" onclick = "window.toggleApproval('${node.id}', ${node.is_approved})" >
                 ${node.is_approved ? "Revoke" : "Approve"}
                   </button >`: ""}
                   
@@ -230,8 +261,4 @@ export const DashboardUI = (() => {
 
 
 //   <!-- Management Button (Only if Approved) -->
-//                   ${node.is_approved
-//                             // ? `<button class="flex-1 sm:flex-none px-3 py-1.5 bg-indigo-600 hover:bg-indigo-500 text-white text-[10px] font-bold rounded shadow transition ${!node.isOnline ? "opacity-50 cursor-not-allowed" : ""}" onclick="window.location.href='/node.html?id=${node.id}'" ${!node.isOnline ? "disabled" : ""}>Manage</button>`
-//                             ? `<button class="flex-1 sm:flex-none px-3 py-1.5 bg-indigo-600 hover:bg-indigo-500 text-white text-[10px] font-bold rounded shadow transition ${!node.isOnline ? "opacity-50 cursor-not-allowed" : ""}" onclick="window.manageHandeller('${node.id}')" ${!node.isOnline ? "disabled" : ""}>Manage</button>`
-//                             : ""
-//                         }
+
