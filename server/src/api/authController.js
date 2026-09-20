@@ -162,7 +162,7 @@ export const authController = {
     verifyAccess: async (req, res) => {
         try {
             const { node, password } = req.body;
-            const userData = req?.user;
+            // const userData = req?.user;
             // console.log("NODE DATA:", node);
 
             // .env file se password get karna

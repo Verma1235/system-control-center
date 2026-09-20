@@ -172,8 +172,7 @@ export const DashboardUI = (() => {
                     </div>`;
                 return;
             }
-            console.log("NODES:", nodes);
-            console.log("USERDATA:", userData);
+        
 
             window.sendUserDataToQueryManager(userData);
 

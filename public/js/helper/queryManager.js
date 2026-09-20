@@ -48,7 +48,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
 
     window.sendUserDataToQueryManager = (userData) => {
-        console.log("DATA RECIVED FROM APP.JS:", userData)
+        // console.log("DATA RECIVED FROM APP.JS:", userData)
         role = userData?.role || "user";
         autoFetchRole(userData);
     }
