@@ -70,18 +70,38 @@ export const DashboardUI = (() => {
         }
     };
 
+    window.manageHandeller = async (nodeId) => {
+        try {
+
+            let pass = await window.customPrompt("Enter your security password.");
+            window.customAlert(pass, "info")
+
+
+
+
+
+
+        } catch (error) {
+            console.log(error?.message);
+            LogsUI.add({ message: error?.message, type: "error", source: "API" })
+        }
+
+
+
+    }
+
     return {
         init: () => {
             container = document.getElementById("clientsContainer");
 
-         const refreshBtn = document.getElementById("refreshNodesBtn");
+            const refreshBtn = document.getElementById("refreshNodesBtn");
             if (refreshBtn) {
                 refreshBtn.addEventListener("click", async () => {
                     refreshBtn.classList.add("animate-spin");
                     try {
                         const data = await api.getNodes();
                         // ✨ FIXED: Passed data.userData as the second argument
-                        DashboardUI.render(data.nodes, data.userData); 
+                        DashboardUI.render(data.nodes, data.userData);
                     } catch (err) {
                         LogsUI.add({ message: "Failed to refresh nodes", type: "error" });
                     } finally {
@@ -130,7 +150,9 @@ export const DashboardUI = (() => {
                     </div>`;
                 return;
             }
-//   ${console.log(node)}
+            console.log("NODES:", nodes);
+            console.log("USERDATA:", userData);
+
             container.innerHTML = nodes
                 .map(
                     (node) => `
@@ -153,7 +175,7 @@ export const DashboardUI = (() => {
                             </h5>
                                 <h3 class="text-sm font-bold text-slate-200">${node.hostname} : ${node?.user_email ? node?.user_email : "No-Account-found"}</h3>
                             </div>
-                            <p class="text-[10px] font-mono text-slate-500 mt-0.5">ID: ${node.id} | Platform: ${node.platform}</p>
+                            <p class="text-[10px] font-mono text-slate-500 mt-0.5">${userData?.username ? `USER: ${userData?.username}` : `ID: ${node.id}`} | Platform: ${node.platform}</p>
                         </div>
                     </div>
 
@@ -181,6 +203,9 @@ export const DashboardUI = (() => {
                          </span>`
                         }
 
+                
+
+                        
                   <!-- Management Button (Only if Approved) -->
                   ${node.is_approved
                             ? `<button class="flex-1 sm:flex-none px-3 py-1.5 bg-indigo-600 hover:bg-indigo-500 text-white text-[10px] font-bold rounded shadow transition ${!node.isOnline ? "opacity-50 cursor-not-allowed" : ""}" onclick="window.location.href='/node.html?id=${node.id}'" ${!node.isOnline ? "disabled" : ""}>Manage</button>`
@@ -195,9 +220,18 @@ export const DashboardUI = (() => {
               </div >
                     </div >
                 </div >
-    `,
+       `,
                 )
                 .join("");
         },
     };
 })();
+
+
+
+//   <!-- Management Button (Only if Approved) -->
+//                   ${node.is_approved
+//                             // ? `<button class="flex-1 sm:flex-none px-3 py-1.5 bg-indigo-600 hover:bg-indigo-500 text-white text-[10px] font-bold rounded shadow transition ${!node.isOnline ? "opacity-50 cursor-not-allowed" : ""}" onclick="window.location.href='/node.html?id=${node.id}'" ${!node.isOnline ? "disabled" : ""}>Manage</button>`
+//                             ? `<button class="flex-1 sm:flex-none px-3 py-1.5 bg-indigo-600 hover:bg-indigo-500 text-white text-[10px] font-bold rounded shadow transition ${!node.isOnline ? "opacity-50 cursor-not-allowed" : ""}" onclick="window.manageHandeller('${node.id}')" ${!node.isOnline ? "disabled" : ""}>Manage</button>`
+//                             : ""
+//                         }
