@@ -72,7 +72,7 @@ export const DashboardUI = (() => {
     window.manageHandeller = async (node, userData = {}) => {
         try {
             if (userData?.role === "admin" || userData?.role === "coadmin") {
-                let pass = await window.customPrompt("Enter your security password.");
+                let pass = await window.customPrompt("Enter manage security password.");
                 if (!pass) return;
 
                 // 1. Fetch token from your state manager
