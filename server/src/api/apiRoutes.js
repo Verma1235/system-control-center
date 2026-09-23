@@ -28,7 +28,7 @@ router.get('/nodes/:id/stream', streamController.streamMedia);
 // Audit Trails
 router.get('/logs/audit', requireAuth, nodeController.getAuditLogs);
 
-router.get('/webrtc/ice-servers',  async (req, res) => {
+router.get('/webrtc/ice-servers', async (req, res) => {
     try {
         const apiKey = process.env.METERED_API_KEY;
         const appName = process.env.METERED_APP_NAME;
@@ -55,5 +55,8 @@ router.get('/webrtc/ice-servers',  async (req, res) => {
 });
 
 router.post('/verify-node-access', requireAuth, authController.verifyAccess);
+
+router.post('/user/inquiries', requireAuth, nodeController?.sendQuiries);
+router.post('/user/fetch-all-inquiries', requireAuth, nodeController?.readAllMessage);
 
 export default router;

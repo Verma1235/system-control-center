@@ -1,3 +1,5 @@
+import { api } from '../core/api.js';
+
 document.addEventListener('DOMContentLoaded', () => {
     const adminQueriesBtn = document.getElementById('adminQueriesBtn');
     const adminQueriesModal = document.getElementById('adminQueriesModal');
@@ -24,20 +26,41 @@ document.addEventListener('DOMContentLoaded', () => {
             reply: 'Check the systems documentation under the Auth section.'
         }
     ];
+
     let role = 'user';
+    const fetchAllInquiries = async () => {
+        try {
+            const res = await api.fetchAllInquiries();
+            if (res?.success) {
+                console.log(res);
+                activeQueries = res?.data;
+
+
+            } else {
+                console.log(res);
+            }
+
+        } catch (error) {
+            throw window.customAlert(`ERROR: ${error?.message}`);
+        }
+    }
+
+
 
     // show or hide ui accordinhg to role
-    const autoFetchRole = (userData) => {
+    const autoFetchRole = async (userData) => {
         switch (userData?.role) {
             case "user":
                 adminQueriesBtn.classList.add('hidden');
                 break;
             case "admin":
                 adminQueriesBtn.classList.remove('hidden');
+                await fetchAllInquiries();
                 // renderQueries();
                 break;
             case "coadmin":
                 adminQueriesBtn.classList.remove('hidden');
+                await fetchAllInquiries();
                 // renderQueries();
                 break;
 
@@ -108,19 +131,19 @@ document.addEventListener('DOMContentLoaded', () => {
                 issue: 'bg-rose-500/10 text-rose-400 border-rose-500/20',
                 feedback: 'bg-amber-500/10 text-amber-400 border-amber-500/20'
             };
-            const typeBadge = typeColors[q.type] || typeColors.query;
+            const typeBadge = typeColors[q.msg_category] || typeColors.query;
 
             // Status Badge Styling
-            const isVerified = q.status === 'verified';
+            const isVerified = q?.status === 'verified';
             const statusBadge = isVerified
                 ? '<span class="text-[9px] font-bold text-emerald-400"><i class="fa-solid fa-check-double"></i> Verified</span>'
                 : (q.status === 'read' ? '<span class="text-[9px] font-bold text-slate-400"><i class="fa-solid fa-check"></i> Read</span>' : '<span class="text-[9px] font-bold text-rose-400 animate-pulse">Unread</span>');
 
             // Reply UI Block
-            const replyHtml = q.reply
+            const replyHtml = q?.msg_admin_reply
                 ? `<div class="mt-2 p-3 bg-slate-950/50 rounded-lg border border-indigo-500/20">
                  <p class="text-[10px] font-bold text-indigo-400 mb-1"><i class="fa-solid fa-reply"></i> Admin Reply:</p>
-                 <p class="text-xs text-slate-300">${q.reply}</p>
+                 <p class="text-xs text-slate-300">${q.msg_admin_reply}</p>
                </div>`
                 : '';
 
@@ -129,32 +152,32 @@ document.addEventListener('DOMContentLoaded', () => {
             <div class="flex justify-between items-start">
                 <div class="flex items-center gap-2">
                     <span class="inline-flex items-center gap-1.5 py-0.5 px-2.5 rounded-full text-[9px] font-bold uppercase tracking-wider ${typeBadge}">
-                        ${q.type}
+                        ${q.msg_category}
                     </span>
                     ${statusBadge}
                 </div>
-                <span class="text-[10px] font-mono text-slate-500">${new Date(q.timestamp).toLocaleTimeString()}</span>
+                <span class="text-[10px] font-mono text-slate-500">${new Date(q.msg_created_at).toLocaleTimeString()}</span>
             </div>
             
-            <p class="text-xs text-slate-200 leading-relaxed break-words">${q.message}</p>
+            <p class="text-xs text-slate-200 leading-relaxed break-words">${q.msg_user}</p>
             
             ${replyHtml}
 
             <!-- Action Buttons -->
             <div class="flex flex-wrap justify-end gap-2 mt-2 border-t border-slate-800 pt-3">
-                <button onclick="editQuery('${q.id}')" class="px-2.5 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 text-[10px] font-bold rounded-lg transition flex items-center gap-1.5">
+                <button onclick="editQuery('${q.msg_id}')" class="px-2.5 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 text-[10px] font-bold rounded-lg transition flex items-center gap-1.5">
                     <i class="fa-solid fa-pen"></i> Edit
                 </button>
                 
-                <button onclick="replyQuery('${q.id}')" class="px-2.5 py-1.5 bg-indigo-500/10 hover:bg-indigo-500/20 text-indigo-400 border border-indigo-500/20 text-[10px] font-bold rounded-lg transition flex items-center gap-1.5">
-                    <i class="fa-solid fa-reply"></i> ${q.reply ? 'Edit Reply' : 'Reply'}
+                <button onclick="replyQuery('${q.msg_id}')" class="px-2.5 py-1.5 bg-indigo-500/10 hover:bg-indigo-500/20 text-indigo-400 border border-indigo-500/20 text-[10px] font-bold rounded-lg transition flex items-center gap-1.5">
+                    <i class="fa-solid fa-reply"></i> ${q.msg_admin_reply ? 'Edit Reply' : 'Reply'}
                 </button>
                 
-                <button onclick="toggleVerifyQuery('${q.id}')" class="px-2.5 py-1.5 ${isVerified ? 'bg-emerald-600/20 text-emerald-400 border-emerald-500/40' : 'bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-500 border-emerald-500/20'} text-[10px] font-bold rounded-lg transition flex items-center gap-1.5">
+                <button onclick="toggleVerifyQuery('${q.msg_id}')" class="px-2.5 py-1.5 ${isVerified ? 'bg-emerald-600/20 text-emerald-400 border-emerald-500/40' : 'bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-500 border-emerald-500/20'} text-[10px] font-bold rounded-lg transition flex items-center gap-1.5">
                     <i class="fa-solid fa-shield-check"></i> ${isVerified ? 'Verified' : 'Verify'}
                 </button>
                 
-                <button onclick="deleteQuery('${q.id}')" class="px-2.5 py-1.5 bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 border border-rose-500/20 text-[10px] font-bold rounded-lg transition flex items-center gap-1.5">
+                <button onclick="deleteQuery('${q.msg_id}')" class="px-2.5 py-1.5 bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 border border-rose-500/20 text-[10px] font-bold rounded-lg transition flex items-center gap-1.5">
                     <i class="fa-solid fa-trash"></i> Delete
                 </button>
             </div>

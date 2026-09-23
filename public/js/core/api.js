@@ -79,5 +79,18 @@ export const api = {
     manageControl: async (nodeId) => {
         return await fetchWithAuth(`/nodes/manage/${nodeId}`)
 
+    },
+    sendInquiries: async (payload) => {
+        return await fetchWithAuth(`/user/inquiries`, {
+            method: 'POST',
+            body: JSON.stringify(payload)
+        });
+    },
+    fetchAllInquiries: async () => {
+
+        return await fetchWithAuth(`/user/fetch-all-inquiries`, {
+            method: 'POST',
+        });
+
     }
 };

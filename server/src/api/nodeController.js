@@ -1,7 +1,7 @@
 import { db } from '../database/db.js';
 import { logger } from '../utils/logger.js';
 import { getActiveNodesMap } from '../socket/socketManager.js';
-
+import crypto from 'crypto';
 export const nodeController = {
     getAllNodes: async (req, res) => {
         try {
@@ -209,5 +209,98 @@ export const nodeController = {
                 message: "Could not retrieve audit history."
             });
         }
+    },
+    // ##########################################
+    // feedback/query handeller
+    // ##########################################
+
+    sendQuiries: async (req, res) => {
+
+        try {
+            const { type, message, timestamp } = req?.body;
+            const user_id = req?.user?.id;
+            const user_email = req?.user?.email;
+
+            const ticketId = crypto.randomUUID();
+
+
+            let query = `
+              INSERT INTO user_inquiries 
+              (ticket_id,user_email,category,message,created_at)
+              VALUES (?, ?, ?, ?, ?)
+            `;
+
+            await db.execute(query, [ticketId, user_email, type, message, Date.now()]);
+            logger.info(`New message sent: ${user_email} from server.}`);
+            return res.json({ success: true, message: "Messge/feedback sent successfully !" });
+        } catch (error) {
+
+            throw res.json({ success: false, message: `${error?.message}` });
+
+        }
+
+    },
+    readAllMessage: async (req, res) => {
+        try {
+            const client_role = req?.user?.role;
+
+            // FIX 1: Must use && (AND) so only people who are NEITHER get blocked
+            if (client_role !== 'admin' && client_role !== 'coadmin') {
+                return res.status(403).json({ success: false, message: "You are not allowed!" });
+            }
+
+            const query = `
+            SELECT 
+                id AS msg_id,
+                ticket_id AS msg_ticket_id,
+                user_email AS msg_user_email,
+                category AS msg_category,
+                message AS msg_user,
+                reply_message AS msg_admin_reply,
+                replied_by AS msg_replied_by,
+                status AS msg_status,
+                created_at AS msg_created_at
+            FROM user_inquiries 
+            ORDER BY created_at DESC;
+        `;
+
+            const [queries] = await db.execute(query);
+
+            return res.status(200).json({
+                success: true,
+                message: "All messages fetched successfully!",
+                data: queries
+            });
+
+        } catch (error) {
+            console.error("Error fetching messages:", error);
+
+            // FIX 2: Return the response properly, do not use 'throw' here
+            return res.status(500).json({
+                success: false,
+                message: error?.message || "Internal Server Error"
+            });
+        }
     }
 };
+
+
+
+
+// BODY: {
+//   type: 'query',
+//   message: 'hi ',
+//   timestamp: '2026-09-23T16:06:49.216Z'
+// }
+// USER: {
+//   id: '3f5a142a-e3d5-4dee-a50b-d3fe6f0b0382',
+//   username: 'Dinesh kumar verma',
+//   role: 'user',
+//   manageAuth: '$argon2id$v=19$m=65536,p=1,t=3$3z5J/y32Y9YIGzl7McyTPQ$02IPLoI1VAZ09FXufsPLAkA5IS+KFvFPp8LCsJpCyGQ',
+//   accountStatus: 0,
+//   email: 'vermadinesh9693@gmail.com',
+//   iat: 1790179357,
+//   exp: 1790222557
+// }
+
+

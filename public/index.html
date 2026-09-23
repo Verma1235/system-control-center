@@ -47,7 +47,7 @@
 
     <!-- Auth Modal -->
     <div id="authModal"
-        class="fixed inset-0 bg-slate-950/90 backdrop-blur-md flex items-center justify-center z-[100] p-4 hidden">
+        class="fixed inset-0 bg-slate-950/90 backdrop-blur-md flex items-center justify-center z-[301] p-4 hidden">
         <div class="bg-slate-900 border border-slate-800 rounded-2xl max-w-md w-full p-6 shadow-2xl space-y-5">
             <div class="text-center space-y-2">
                 <div
@@ -74,7 +74,7 @@
 
     <!-- Custom Confirm Modal -->
     <div id="confirmModal"
-        class="fixed inset-0 bg-slate-950/90 backdrop-blur-sm flex items-center justify-center z-[200] hidden p-4 transition-opacity">
+        class="fixed inset-0 bg-slate-950/90 backdrop-blur-sm flex items-center justify-center z-[301] hidden p-4 transition-opacity">
         <div class="bg-slate-900 border border-slate-800 rounded-2xl w-full max-w-sm p-6 shadow-2xl flex flex-col">
             <div class="flex items-center gap-3 mb-4 text-rose-500">
                 <div
@@ -97,7 +97,7 @@
 
     <!-- Custom Alert Modal -->
     <div id="alertModal"
-        class="fixed inset-0 bg-slate-950/90 backdrop-blur-sm flex items-center justify-center z-[210] hidden p-4 transition-opacity">
+        class="fixed inset-0 bg-slate-950/90 backdrop-blur-sm flex items-center justify-center z-[302] hidden p-4 transition-opacity">
         <div class="bg-slate-900 border border-slate-800 rounded-2xl w-full max-w-sm p-6 shadow-2xl flex flex-col">
             <div class="flex items-center gap-3 mb-4 text-sky-500">
                 <div
@@ -116,7 +116,7 @@
 
     <!-- Custom Prompt Modal -->
     <div id="promptModal"
-        class="fixed inset-0 bg-slate-950/90 backdrop-blur-sm flex items-center justify-center z-[210] hidden p-4 transition-opacity">
+        class="fixed inset-0 bg-slate-950/90 backdrop-blur-sm flex items-center justify-center z-[302] hidden p-4 transition-opacity">
         <div class="bg-slate-900 border border-slate-800 rounded-2xl w-full max-w-sm p-6 shadow-2xl flex flex-col">
             <div class="flex items-center gap-3 mb-4 text-emerald-500">
                 <div
@@ -248,7 +248,7 @@
                                 class="block text-[10px] font-bold text-slate-400 uppercase tracking-wide">Details</label>
                             <span id="charCount" class="text-[10px] font-mono text-slate-500">0 / 200</span>
                         </div>
-                        <textarea id="feedbackText" rows="4" maxlength="200" required
+                        <textarea id="feedbackText" rows="4" maxlength="200"
                             class="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-3 text-sm text-white focus:outline-none focus:border-indigo-500 transition resize-none placeholder:text-slate-600"
                             placeholder="Describe your query, issue, or suggestion in detail..."></textarea>
                     </div>
@@ -308,7 +308,7 @@
     <!-- Socket.IO is served by the backend automatically -->
     <script src="/socket.io/socket.io.js"></script>
     <script type="module" src="./js/app.js"></script>
-    <script type="module" src="./js/helper/fedback.js"></script>
+    <script type="module" src="./js/helper/feedback.js"></script>
     <script type="module" src="./js/helper/queryManager.js"></script>
 </body>
 
