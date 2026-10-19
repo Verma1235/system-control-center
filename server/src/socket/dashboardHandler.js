@@ -144,6 +144,83 @@ export function handleDashboardConnection(io, socket, activeNodesMap) {
 
 
 
+    socket.on("setCursorPosition", (payload, callback) => {
+        const { x, y, targetNodeId } = payload;
+        const targetSocketId = activeNodesMap.get(targetNodeId);
+
+        if (!targetSocketId) {
+            if (typeof callback === "function") {
+                callback({ success: false, message: "Target node is offline." });
+            }
+            return socket.emit("command-error", {
+                targetNodeId,
+                error: "NODE_OFFLINE",
+                message: "Target node is offline."
+            });
+        }
+
+        io.to(targetSocketId).emit(
+            "set:cursor:position",
+            {
+                fromSocketId: socket.id,
+                x,
+                y,
+            },
+            (res) => {
+                if (res instanceof Error) {
+                    console.error("ACK failed:", res.message);
+                    return;
+                }
+
+                console.log("Callback:", res);
+            }
+        );
+
+    })
+
+  
+
+    // Mouse Clicks Relay
+    socket.on("trigger:mouse:click", (payload) => {
+        const { targetNodeId, button } = payload;
+        const targetSocketId = activeNodesMap.get(targetNodeId);
+
+        if (!targetSocketId) {
+            return socket.emit("command-error", { targetNodeId, error: "NODE_OFFLINE", message: "Target node is offline." });
+        }
+
+        io.to(targetSocketId).emit("trigger:mouse:click", { button }, (res) => {
+            if (res instanceof Error) return console.error("ACK failed:", res.message);
+        });
+    });
+
+    // 🔥 NAYA: Mouse Scroll Relay
+    socket.on("trigger:mouse:scroll", (payload) => {
+        const { targetNodeId, deltaX, deltaY } = payload;
+        const targetSocketId = activeNodesMap.get(targetNodeId);
+
+        if (!targetSocketId) {
+            return socket.emit("command-error", { targetNodeId, error: "NODE_OFFLINE", message: "Target node is offline." });
+        }
+
+        // Emit to target node
+        io.to(targetSocketId).emit("trigger:mouse:scroll", { deltaX, deltaY });
+    });
+
+    // 🔥 NAYA: Keyboard Shortcuts/Events Relay
+    socket.on("trigger:keyboard:event", (payload) => {
+        const { targetNodeId, action, key } = payload;
+        const targetSocketId = activeNodesMap.get(targetNodeId);
+
+        if (!targetSocketId) {
+            return socket.emit("command-error", { targetNodeId, error: "NODE_OFFLINE", message: "Target node is offline." });
+        }
+
+        // Emit to target node
+        io.to(targetSocketId).emit("trigger:keyboard:event", { action, key });
+    });
+
+
     socket.on('disconnect', () => {
         logger.info(`Dashboard Disconnected: ${socket.user.username}`);
     });

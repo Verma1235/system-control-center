@@ -209,6 +209,34 @@
         <section class="lg:col-span-8 space-y-6">
 
             <!-- Desktop Stream Panel -->
+            <!-- <div
+                class="overflow-hidden rounded-2xl border border-slate-800/80 bg-slate-900/40 shadow-xl backdrop-blur-xl video-glow">
+                <div class="border-b border-slate-800/80 bg-slate-950/70 px-4 py-3 flex justify-between items-center">
+                    <h2 class="text-xs font-bold text-slate-200 flex items-center gap-3">
+                        <i class="fa-solid fa-desktop text-indigo-400"></i> Desktop Feed
+                    </h2>
+                    <div class="flex gap-2 items-center">
+                        <button id="btnStartScreen" disabled
+                            class="px-3 py-1.5 bg-indigo-600/20 text-indigo-400 border border-indigo-500/30 hover:bg-indigo-600/40 rounded-lg text-[10px] font-bold transition flex items-center gap-1.5 shadow-inner disabled:opacity-30 disabled:cursor-not-allowed">
+                            <i class="fa-solid fa-play"></i> Start
+                        </button>
+                        <button id="btnStopScreen" disabled
+                            class="px-3 py-1.5 bg-slate-800 text-slate-400 hover:bg-slate-700 rounded-lg text-[10px] font-bold transition flex items-center gap-1.5 disabled:opacity-30 disabled:cursor-not-allowed">
+                            <i class="fa-solid fa-stop"></i> Stop
+                        </button>
+                
+                        <button id="btnFullscreenScreen" disabled title="Full Screen"
+                            class="ml-1 px-2 py-1.5 bg-slate-800 text-slate-400 hover:text-white hover:bg-slate-700 rounded-lg transition disabled:opacity-30 disabled:cursor-not-allowed">
+                            <i class="fa-solid fa-expand"></i>
+                        </button>
+                    </div>
+                </div>
+                <div class="aspect-video bg-black relative flex items-center justify-center overflow-hidden">
+                    <video id="screenVideo" autoplay playsinline muted
+                        class="w-full h-full object-contain relative z-10"></video>
+                </div>
+            </div> -->
+            <!-- Desktop Stream Panel -->
             <div
                 class="overflow-hidden rounded-2xl border border-slate-800/80 bg-slate-900/40 shadow-xl backdrop-blur-xl video-glow">
                 <div class="border-b border-slate-800/80 bg-slate-950/70 px-4 py-3 flex justify-between items-center">
@@ -231,9 +259,20 @@
                         </button>
                     </div>
                 </div>
-                <div class="aspect-video bg-black relative flex items-center justify-center overflow-hidden">
-                    <video id="screenVideo" autoplay playsinline muted
-                        class="w-full h-full object-contain relative z-10"></video>
+
+                <!-- Wrapper div ko ID di gayi hai taki Fullscreen is par apply ho -->
+                <div id="videoContainer"
+                    class="aspect-video bg-black relative flex items-center justify-center overflow-hidden">
+                    <!-- 
+          Modifications:
+          1. oncontextmenu="return false;" -> Default right click menu block karega
+          2. disablePictureInPicture -> PiP mode block karega
+          3. select-none, outline-none -> Selection aur blue border block karega
+        -->
+                    <video id="screenVideo" autoplay playsinline muted disablePictureInPicture
+                        oncontextmenu="return false;"
+                        class="w-full h-full object-contain relative z-10 select-none outline-none cursor-crosshair">
+                    </video>
                 </div>
             </div>
 
