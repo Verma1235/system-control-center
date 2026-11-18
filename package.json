@@ -6,7 +6,8 @@
   "type": "module",
   "scripts": {
     "start": "node server/src/server.js",
-    "dev": "node --watch server/src/server.js"
+    "dev": "node --watch server/src/server.js",
+    "build": "node -e \"console.log('Vercel build completed successfully')\""
   },
   "engines": {
     "node": ">=22"
